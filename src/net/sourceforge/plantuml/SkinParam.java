@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  *
- * Revision $Revision: 5983 $
+ * Revision $Revision: 7484 $
  *
  */
 package net.sourceforge.plantuml;
@@ -44,7 +44,15 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.sourceforge.plantuml.cucadiagram.dot.DotSplines;
+import net.sourceforge.plantuml.cucadiagram.dot.GraphvizLayoutStrategy;
+import net.sourceforge.plantuml.graphic.HorizontalAlignement;
 import net.sourceforge.plantuml.graphic.HtmlColor;
+import net.sourceforge.plantuml.svek.PackageStyle;
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
+import net.sourceforge.plantuml.ugraphic.ColorMapperIdentity;
+import net.sourceforge.plantuml.ugraphic.ColorMapperMonochrome;
+import net.sourceforge.plantuml.ugraphic.UFont;
 
 public class SkinParam implements ISkinParam {
 
@@ -56,6 +64,12 @@ public class SkinParam implements ISkinParam {
 
 	private static final String stereoPatternString = "\\<\\<(.*?)\\>\\>";
 	private static final Pattern stereoPattern = Pattern.compile(stereoPatternString);
+
+	private final UmlDiagramType type;
+
+	public SkinParam(UmlDiagramType type) {
+		this.type = type;
+	}
 
 	static String cleanForKey(String key) {
 		key = key.toLowerCase().trim();
@@ -72,7 +86,7 @@ public class SkinParam implements ISkinParam {
 	public HtmlColor getBackgroundColor() {
 		final HtmlColor result = getHtmlColor(ColorParam.background, null);
 		if (result == null) {
-			return HtmlColor.getColorIfValid("white");
+			return HtmlColor.WHITE;
 		}
 		return result;
 	}
@@ -117,7 +131,7 @@ public class SkinParam implements ISkinParam {
 		}
 	}
 
-	public int getFontSize(FontParam param, String stereotype) {
+	private int getFontSize(FontParam param, String stereotype) {
 		if (stereotype != null) {
 			checkStereotype(stereotype);
 			final String value2 = getValue(param.name() + "fontsize" + stereotype);
@@ -130,12 +144,12 @@ public class SkinParam implements ISkinParam {
 			value = getValue("defaultfontsize");
 		}
 		if (value == null || value.matches("\\d+") == false) {
-			return param.getDefaultSize();
+			return param.getDefaultSize(this);
 		}
 		return Integer.parseInt(value);
 	}
 
-	public String getFontFamily(FontParam param, String stereotype) {
+	private String getFontFamily(FontParam param, String stereotype) {
 		if (stereotype != null) {
 			checkStereotype(stereotype);
 			final String value2 = getValue(param.name() + "fontname" + stereotype);
@@ -175,7 +189,7 @@ public class SkinParam implements ISkinParam {
 		return HtmlColor.getColorIfValid(value);
 	}
 
-	public int getFontStyle(FontParam param, String stereotype) {
+	private int getFontStyle(FontParam param, String stereotype) {
 		String value = null;
 		if (stereotype != null) {
 			checkStereotype(stereotype);
@@ -188,7 +202,7 @@ public class SkinParam implements ISkinParam {
 			value = getValue("defaultfontstyle");
 		}
 		if (value == null) {
-			return param.getDefaultFontStyle();
+			return param.getDefaultFontStyle(this);
 		}
 		int result = Font.PLAIN;
 		if (value.toLowerCase().contains("bold")) {
@@ -200,11 +214,11 @@ public class SkinParam implements ISkinParam {
 		return result;
 	}
 
-	public Font getFont(FontParam fontParam, String stereotype) {
+	public UFont getFont(FontParam fontParam, String stereotype) {
 		if (stereotype != null) {
 			checkStereotype(stereotype);
 		}
-		return new Font(getFontFamily(fontParam, stereotype), getFontStyle(fontParam, stereotype), getFontSize(
+		return new UFont(getFontFamily(fontParam, stereotype), getFontStyle(fontParam, stereotype), getFontSize(
 				fontParam, stereotype));
 	}
 
@@ -231,14 +245,14 @@ public class SkinParam implements ISkinParam {
 		return 10;
 	}
 
-	public boolean isMonochrome() {
+	private boolean isMonochrome() {
 		return "true".equals(getValue("monochrome"));
 	}
 
 	public static Collection<String> getPossibleValues() {
 		final Set<String> result = new TreeSet<String>();
 		result.add("Monochrome");
-		result.add("BackgroundColor");
+		// result.add("BackgroundColor");
 		result.add("CircledCharacterRadius");
 		result.add("ClassAttributeIconSize");
 		result.add("DefaultFontName");
@@ -252,7 +266,15 @@ public class SkinParam implements ISkinParam {
 			result.add(h + "FontSize");
 			result.add(h + "FontColor");
 		}
+		for (ColorParam p : EnumSet.allOf(ColorParam.class)) {
+			final String h = capitalize(p.name());
+			result.add(h + "Color");
+		}
 		return Collections.unmodifiableSet(result);
+	}
+
+	private static String capitalize(String name) {
+		return name.substring(0, 1).toUpperCase() + name.substring(1);
 	}
 
 	public int getDpi() {
@@ -262,5 +284,107 @@ public class SkinParam implements ISkinParam {
 		}
 		return 96;
 	}
+
+	public boolean useOctagonForActivity() {
+		final String value = getValue("activityshape");
+		if ("roundedbox".equalsIgnoreCase(value)) {
+			return false;
+		}
+		if ("octagon".equalsIgnoreCase(value)) {
+			return true;
+		}
+		return false;
+	}
+
+	public DotSplines getDotSplines() {
+		final String value = getValue("linetype");
+		if ("polyline".equalsIgnoreCase(value)) {
+			return DotSplines.POLYLINE;
+		}
+		if ("ortho".equalsIgnoreCase(value)) {
+			return DotSplines.ORTHO;
+		}
+		return DotSplines.SPLINES;
+	}
+
+	public GraphvizLayoutStrategy getStrategy() {
+		final String value = getValue("layout");
+		if ("neato".equalsIgnoreCase(value)) {
+			return GraphvizLayoutStrategy.NEATO;
+		}
+		if ("circo".equalsIgnoreCase(value)) {
+			return GraphvizLayoutStrategy.CIRCO;
+		}
+		if ("fdp".equalsIgnoreCase(value)) {
+			return GraphvizLayoutStrategy.FDP;
+		}
+		if ("twopi".equalsIgnoreCase(value)) {
+			return GraphvizLayoutStrategy.TWOPI;
+		}
+		return GraphvizLayoutStrategy.DOT;
+	}
+
+	public HorizontalAlignement getHorizontalAlignement(AlignParam param) {
+		final String value = getValue(param.name());
+		final HorizontalAlignement result = HorizontalAlignement.fromString(value);
+		if (result == null) {
+			return param.getDefaultValue();
+		}
+		return result;
+	}
+
+	public ColorMapper getColorMapper() {
+		if (isMonochrome()) {
+			return new ColorMapperMonochrome();
+		}
+		return new ColorMapperIdentity();
+	}
+
+	public boolean isSvek() {
+		boolean defaultValue = false;
+//		if (OptionFlags.SVEK && type == UmlDiagramType.CLASS) {
+//			defaultValue = true;
+//		}
+		if (type == UmlDiagramType.CLASS) {
+			defaultValue = true;
+		}
+		if (type == UmlDiagramType.OBJECT) {
+			defaultValue = true;
+		}
+		if (OptionFlags.SVEK && type == UmlDiagramType.USECASE) {
+			defaultValue = true;
+		}
+		if (OptionFlags.SVEK && type == UmlDiagramType.COMPONENT) {
+			defaultValue = true;
+		}
+		if (OptionFlags.SVEK && type == UmlDiagramType.ACTIVITY) {
+			defaultValue = true;
+		}
+		if (OptionFlags.SVEK && type == UmlDiagramType.STATE) {
+			defaultValue = true;
+		}
+		final String value = getValue("svek");
+		if (value == null) {
+			return defaultValue;
+		}
+		return "true".equalsIgnoreCase(value);
+	}
+
+	public boolean shadowing() {
+		final String value = getValue("shadowing");
+		if ("false".equalsIgnoreCase(value)) {
+			return false;
+		}
+		return true;
+	}
+	
+	public PackageStyle getPackageStyle() {
+		final String value = getValue("packageStyle");
+		if ("rect".equalsIgnoreCase(value)) {
+			return PackageStyle.RECT;
+		}
+		return PackageStyle.FOLDER;
+	}
+
 
 }

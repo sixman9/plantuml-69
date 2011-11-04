@@ -28,52 +28,74 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5728 $
+ * Revision $Revision: 6109 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram.command;
 
 import java.util.List;
+import java.util.Map;
 
 import net.sourceforge.plantuml.FontParam;
 import net.sourceforge.plantuml.StringUtils;
 import net.sourceforge.plantuml.command.CommandExecutionResult;
-import net.sourceforge.plantuml.command.SingleLineCommand;
+import net.sourceforge.plantuml.command.SingleLineCommand2;
+import net.sourceforge.plantuml.command.regex.RegexConcat;
+import net.sourceforge.plantuml.command.regex.RegexPartialMatch;
 import net.sourceforge.plantuml.cucadiagram.Stereotype;
+import net.sourceforge.plantuml.graphic.HtmlColor;
+import net.sourceforge.plantuml.sequencediagram.LifeEventType;
 import net.sourceforge.plantuml.sequencediagram.Participant;
 import net.sourceforge.plantuml.sequencediagram.ParticipantType;
 import net.sourceforge.plantuml.sequencediagram.SequenceDiagram;
 
-public class CommandParticipant extends SingleLineCommand<SequenceDiagram> {
+public abstract class CommandParticipant extends SingleLineCommand2<SequenceDiagram> {
 
-	public CommandParticipant(SequenceDiagram sequenceDiagram) {
-		super(sequenceDiagram,
-				"(?i)^(participant|actor)\\s+(?:\"([^\"]+)\"\\s+as\\s+)?([\\p{L}0-9_.]+)(?:\\s*(\\<\\<.*\\>\\>))?\\s*(#\\w+)?$");
+	public CommandParticipant(SequenceDiagram sequenceDiagram, RegexConcat pattern) {
+		super(sequenceDiagram, pattern);
 	}
 
 	@Override
-	protected CommandExecutionResult executeArg(List<String> arg) {
-		final String code = arg.get(2);
+	final protected CommandExecutionResult executeArg(Map<String, RegexPartialMatch> arg2) {
+		final String code = arg2.get("CODE").get(0);
 		if (getSystem().participants().containsKey(code)) {
-			return CommandExecutionResult.error("Duplicate participant : "+code);
+			getSystem().putParticipantInLast(code);
+			return CommandExecutionResult.ok();
 		}
 
 		List<String> strings = null;
-		if (arg.get(1) != null) {
-			strings = StringUtils.getWithNewlines(arg.get(1));
+		if (arg2.get("FULL") != null && arg2.get("FULL").get(0) != null) {
+			strings = StringUtils.getWithNewlines(arg2.get("FULL").get(0));
 		}
 
-		final ParticipantType type = ParticipantType.valueOf(arg.get(0).toUpperCase());
+		final String typeString = arg2.get("TYPE").get(0).toUpperCase();
+		final ParticipantType type;
+		final boolean create;
+		if (typeString.equals("CREATE")) {
+			type = ParticipantType.PARTICIPANT;
+			create = true;
+		} else {
+			type = ParticipantType.valueOf(typeString);
+			create = false;
+		}
 		final Participant participant = getSystem().createNewParticipant(type, code, strings);
 
-		final String stereotype = arg.get(3);
+		final String stereotype = arg2.get("STEREO").get(0);
 
 		if (stereotype != null) {
 			participant.setStereotype(new Stereotype(stereotype,
 					getSystem().getSkinParam().getCircledCharacterRadius(), getSystem().getSkinParam().getFont(
 							FontParam.CIRCLED_CHARACTER, null)));
 		}
-		participant.setSpecificBackcolor(arg.get(4));
+		participant.setSpecificBackcolor(HtmlColor.getColorIfValid(arg2.get("COLOR").get(0)));
+
+		if (create) {
+			final String error = getSystem().activate(participant, LifeEventType.CREATE, null);
+			if (error != null) {
+				return CommandExecutionResult.error(error);
+			}
+
+		}
 
 		return CommandExecutionResult.ok();
 	}

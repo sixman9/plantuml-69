@@ -34,33 +34,27 @@
 package net.sourceforge.plantuml;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 final public class UmlSource {
 
-	final private List<String> source = new ArrayList<String>();
-
-	@Deprecated
-	public UmlSource(UmlSource start) {
-		this.source.addAll(start.source);
-	}
+	final private List<String> source;
 
 	public UmlSource(List<String> source) {
-		this.source.addAll(source);
+		this.source = Collections.unmodifiableList(new ArrayList<String>(source));
 	}
 
-	@Deprecated
-	public UmlSource() {
+	public DiagramType getDiagramType() {
+		return DiagramType.getTypeFromArobaseStart(source.get(0));
 	}
 
 	public Iterator<String> iterator() {
 		return source.iterator();
-	}
-
-	@Deprecated
-	public void append(String s) {
-		source.add(s);
 	}
 
 	public String getPlainString() {
@@ -82,10 +76,13 @@ final public class UmlSource {
 
 	public boolean isEmpty() {
 		for (String s : source) {
-			if (BlockUmlBuilder.isArobaseStartuml(s)) {
+			if (StartUtils.isArobaseStartDiagram(s)) {
 				continue;
 			}
-			if (BlockUmlBuilder.isArobaseEnduml(s)) {
+			if (StartUtils.isArobaseEndDiagram(s)) {
+				continue;
+			}
+			if (s.matches("\\s*'.*")) {
 				continue;
 			}
 			if (s.trim().length() != 0) {
@@ -93,6 +90,18 @@ final public class UmlSource {
 			}
 		}
 		return true;
+	}
+
+	public List<String> getTitle() {
+		final Pattern p = Pattern.compile("(?i)^\\s*title\\s+(.+)$");
+		for (String s : source) {
+			final Matcher m = p.matcher(s);
+			final boolean ok = m.matches();
+			if (ok) {
+				return Arrays.asList(m.group(1));
+			}
+		}
+		return Collections.emptyList();
 	}
 
 }

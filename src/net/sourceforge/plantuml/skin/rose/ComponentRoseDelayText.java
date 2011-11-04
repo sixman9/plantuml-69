@@ -33,25 +33,27 @@
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.geom.Dimension2D;
 import java.util.List;
 
 import net.sourceforge.plantuml.graphic.HorizontalAlignement;
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.graphic.TextBlock;
 import net.sourceforge.plantuml.skin.AbstractTextualComponent;
+import net.sourceforge.plantuml.skin.Area;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 
 public class ComponentRoseDelayText extends AbstractTextualComponent {
 
-	public ComponentRoseDelayText(Color fontColor, Font font, List<? extends CharSequence> stringsToDisplay) {
-		super(stringsToDisplay, fontColor, font, HorizontalAlignement.CENTER, 4, 4, 4);
+	public ComponentRoseDelayText(HtmlColor fontColor, UFont font, List<? extends CharSequence> stringsToDisplay) {
+		super(stringsToDisplay, fontColor, font, HorizontalAlignement.CENTER, 0, 0, 4);
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		final TextBlock textBlock = getTextBlock();
 		final StringBounder stringBounder = ug.getStringBounder();
 		final double textWidth = getTextWidth(stringBounder);
@@ -71,7 +73,7 @@ public class ComponentRoseDelayText extends AbstractTextualComponent {
 
 	@Override
 	public double getPreferredWidth(StringBounder stringBounder) {
-		return getTextWidth(stringBounder) + 30;
+		return getPureTextWidth(stringBounder);
 	}
 
 }

@@ -58,6 +58,10 @@ public abstract class CommandMultilines2<S extends PSystem> implements Command {
 		this.starting = patternStart;
 		this.ending = Pattern.compile(patternEnd);
 	}
+	
+	public String[] getDescription() {
+		return new String[] { "START: "+starting.getPattern(), "END: "+ending.pattern() };
+	}
 
 	final public CommandControl isValid(List<String> lines) {
 		if (isCommandForbidden()) {
@@ -71,7 +75,7 @@ public abstract class CommandMultilines2<S extends PSystem> implements Command {
 			return CommandControl.OK_PARTIAL;
 		}
 
-		Matcher m1 = ending.matcher(lines.get(lines.size() - 1).trim());
+		final Matcher m1 = ending.matcher(lines.get(lines.size() - 1).trim());
 		if (m1.matches() == false) {
 			return CommandControl.OK_PARTIAL;
 		}

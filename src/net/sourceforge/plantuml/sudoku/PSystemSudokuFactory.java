@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 3837 $
+ * Revision $Revision: 6750 $
  *
  */
 package net.sourceforge.plantuml.sudoku;
@@ -36,17 +36,14 @@ package net.sourceforge.plantuml.sudoku;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.sourceforge.plantuml.DiagramType;
 import net.sourceforge.plantuml.PSystemBasicFactory;
 
 public class PSystemSudokuFactory implements PSystemBasicFactory {
 
 	private PSystemSudoku system;
 
-	public PSystemSudokuFactory() {
-		reset();
-	}
-
-	public void reset() {
+	public void init(String startLine) {
 	}
 
 	public PSystemSudoku getSystem() {
@@ -69,4 +66,9 @@ public class PSystemSudokuFactory implements PSystemBasicFactory {
 		return true;
 
 	}
+	
+	public DiagramType getDiagramType() {
+		return DiagramType.UML;
+	}
+
 }

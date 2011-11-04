@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5939 $
+ * Revision $Revision: 7294 $
  *
  */
 package net.sourceforge.plantuml.ugraphic.g2d;
@@ -38,20 +38,31 @@ import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.geom.Line2D;
 
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
 import net.sourceforge.plantuml.ugraphic.UDriver;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.UParam;
 import net.sourceforge.plantuml.ugraphic.UShape;
 import net.sourceforge.plantuml.ugraphic.UStroke;
 
-public class DriverLineG2d implements UDriver<Graphics2D> {
+public class DriverLineG2d extends DriverShadowedG2d implements UDriver<Graphics2D> {
 
-	public void draw(UShape ushape, double x, double y, UParam param, Graphics2D g2d) {
+	private final double dpiFactor;
+	
+	public DriverLineG2d(double dpiFactor) {
+		this.dpiFactor = dpiFactor;
+	}
+
+	public void draw(UShape ushape, double x, double y, ColorMapper mapper, UParam param, Graphics2D g2d) {
 		final ULine shape = (ULine) ushape;
 
 		final Shape line = new Line2D.Double(x, y, x + shape.getDX(), y + shape.getDY());
 		manageStroke(param, g2d);
-		g2d.setColor(param.getColor());
+		// Shadow
+		if (shape.getDeltaShadow() != 0) {
+			drawShadow(g2d, line, shape.getDeltaShadow(), dpiFactor);
+		}
+		g2d.setColor(mapper.getMappedColor(param.getColor()));
 		g2d.draw(line);
 	}
 

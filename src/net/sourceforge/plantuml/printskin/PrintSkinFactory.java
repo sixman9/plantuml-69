@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 3835 $
+ * Revision $Revision: 6750 $
  *
  */
 package net.sourceforge.plantuml.printskin;
@@ -37,19 +37,14 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.sourceforge.plantuml.DiagramType;
 import net.sourceforge.plantuml.PSystemBasicFactory;
 
 public class PrintSkinFactory implements PSystemBasicFactory {
 
 	private PrintSkin system;
 
-	// private List<Command> cmds;
-
-	public PrintSkinFactory() {
-		reset();
-	}
-
-	public void reset() {
+	public void init(String startLine) {
 	}
 
 	public PrintSkin getSystem() {
@@ -66,5 +61,10 @@ public class PrintSkinFactory implements PSystemBasicFactory {
 		system = new PrintSkin(m.group(1), Arrays.asList(m.group(2)));
 		return true;
 	}
+	
+	public DiagramType getDiagramType() {
+		return DiagramType.UML;
+	}
+
 
 }

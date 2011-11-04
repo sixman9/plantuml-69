@@ -28,20 +28,22 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5937 $
+ * Revision $Revision: 7331 $
  *
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.skin.ArrowConfiguration;
+import net.sourceforge.plantuml.skin.ArrowHead;
 import net.sourceforge.plantuml.skin.ArrowPart;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.UPolygon;
@@ -51,45 +53,48 @@ public class ComponentRoseSelfArrow extends AbstractComponentRoseArrow {
 
 	private final double arrowWidth = 45;
 
-	public ComponentRoseSelfArrow(Color foregroundColor, Color colorFont, Font font,
+	public ComponentRoseSelfArrow(HtmlColor foregroundColor, HtmlColor colorFont, UFont font,
 			List<? extends CharSequence> stringsToDisplay, ArrowConfiguration arrowConfiguration) {
 		super(foregroundColor, colorFont, font, stringsToDisplay, arrowConfiguration);
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
 		final StringBounder stringBounder = ug.getStringBounder();
 		final double textHeight = getTextHeight(stringBounder);
 
 		ug.getParam().setColor(getForegroundColor());
-		final double x2 = arrowWidth;
+		final double x2 = arrowWidth - 3;
 
 		if (getArrowConfiguration().isDotted()) {
 			stroke(ug, 2, 2);
 		}
 
-		ug.draw(0, textHeight, new ULine(x2, 0));
+		final double dx1 = area.getDeltaX1() < 0 ? area.getDeltaX1() : 0;
+		final double dx2 = area.getDeltaX1() > 0 ? -area.getDeltaX1() : 0;
+
+		ug.draw(dx1, textHeight, new ULine(x2 - dx1, 0));
 
 		final double textAndArrowHeight = textHeight + getArrowOnlyHeight(stringBounder);
 
 		ug.draw(x2, textHeight, new ULine(0, textAndArrowHeight - textHeight));
-		ug.draw(0, textAndArrowHeight, new ULine(x2, 0));
+		ug.draw(dx2, textAndArrowHeight, new ULine(x2 - dx2, 0));
 
 		if (getArrowConfiguration().isDotted()) {
 			ug.getParam().setStroke(new UStroke());
 		}
 
-		if (getArrowConfiguration().isASync()) {
+		if (getArrowConfiguration().getHead() == ArrowHead.ASYNC) {
 			if (getArrowConfiguration().getPart() != ArrowPart.BOTTOM_PART) {
-				ug.draw(0, textAndArrowHeight, new ULine(getArrowDeltaX(), -getArrowDeltaY()));
+				ug.draw(dx2, textAndArrowHeight, new ULine(getArrowDeltaX(), -getArrowDeltaY()));
 			}
 			if (getArrowConfiguration().getPart() != ArrowPart.TOP_PART) {
-				ug.draw(0, textAndArrowHeight, new ULine(getArrowDeltaX(), getArrowDeltaY()));
+				ug.draw(dx2, textAndArrowHeight, new ULine(getArrowDeltaX(), getArrowDeltaY()));
 			}
 		} else {
 			ug.getParam().setBackcolor(getForegroundColor());
 			final UPolygon polygon = getPolygon(textAndArrowHeight);
-			ug.draw(0, 0, polygon);
+			ug.draw(dx2, 0, polygon);
 			ug.getParam().setBackcolor(null);
 		}
 

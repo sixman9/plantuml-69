@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5874 $
+ * Revision $Revision: 7452 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram.graphic;
@@ -38,6 +38,7 @@ import java.awt.geom.Dimension2D;
 import net.sourceforge.plantuml.Dimension2DDouble;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.sequencediagram.InGroupableList;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.skin.Component;
 import net.sourceforge.plantuml.skin.Context2D;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
@@ -48,7 +49,8 @@ class GroupingTail extends GroupingGraphicalElement {
 	private final Component body;
 	private final Component tail;
 
-	public GroupingTail(double currentY, double initY, Component body, Component tail, InGroupableList inGroupableList) {
+	public GroupingTail(double currentY, double initY, Component body, Component tail, InGroupableList inGroupableList,
+			boolean parallel) {
 		super(currentY, inGroupableList);
 		if (currentY < initY) {
 			throw new IllegalArgumentException("currentY=" + currentY + " initY=" + initY);
@@ -69,8 +71,8 @@ class GroupingTail extends GroupingGraphicalElement {
 		final double x2 = getInGroupableList().getMaxX(stringBounder);
 		ug.translate(x1, initY);
 		final Dimension2D dimBody = new Dimension2DDouble(x2 - x1, getPreferredHeight(stringBounder));
-		body.drawU(ug, dimBody, context);
-		tail.drawU(ug, dimBody, context);
+		body.drawU(ug, new Area(dimBody), context);
+		tail.drawU(ug, new Area(dimBody), context);
 	}
 
 	@Override

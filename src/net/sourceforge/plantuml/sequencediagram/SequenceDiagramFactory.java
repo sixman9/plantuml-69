@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5933 $
+ * Revision $Revision: 7354 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram;
@@ -37,7 +37,9 @@ import net.sourceforge.plantuml.command.AbstractUmlSystemCommandFactory;
 import net.sourceforge.plantuml.sequencediagram.command.CommandActivate;
 import net.sourceforge.plantuml.sequencediagram.command.CommandActivate2;
 import net.sourceforge.plantuml.sequencediagram.command.CommandArrow;
+import net.sourceforge.plantuml.sequencediagram.command.CommandArrowCrossX;
 import net.sourceforge.plantuml.sequencediagram.command.CommandAutoNewpage;
+import net.sourceforge.plantuml.sequencediagram.command.CommandAutoactivate;
 import net.sourceforge.plantuml.sequencediagram.command.CommandAutonumber;
 import net.sourceforge.plantuml.sequencediagram.command.CommandBoxEnd;
 import net.sourceforge.plantuml.sequencediagram.command.CommandBoxStart;
@@ -56,9 +58,15 @@ import net.sourceforge.plantuml.sequencediagram.command.CommandNewpage;
 import net.sourceforge.plantuml.sequencediagram.command.CommandNoteOnArrow;
 import net.sourceforge.plantuml.sequencediagram.command.CommandNoteOverSeveral;
 import net.sourceforge.plantuml.sequencediagram.command.CommandNoteSequence;
-import net.sourceforge.plantuml.sequencediagram.command.CommandParticipant;
-import net.sourceforge.plantuml.sequencediagram.command.CommandParticipant2;
+import net.sourceforge.plantuml.sequencediagram.command.CommandParticipantA;
+import net.sourceforge.plantuml.sequencediagram.command.CommandParticipantA2;
+import net.sourceforge.plantuml.sequencediagram.command.CommandParticipantA3;
+import net.sourceforge.plantuml.sequencediagram.command.CommandParticipantA4;
+import net.sourceforge.plantuml.sequencediagram.command.CommandReferenceMultilinesOverSeveral;
+import net.sourceforge.plantuml.sequencediagram.command.CommandReferenceOverSeveral;
+import net.sourceforge.plantuml.sequencediagram.command.CommandReturn;
 import net.sourceforge.plantuml.sequencediagram.command.CommandSkin;
+import net.sourceforge.plantuml.sequencediagram.command.CommandUrl;
 
 public class SequenceDiagramFactory extends AbstractUmlSystemCommandFactory {
 
@@ -70,9 +78,14 @@ public class SequenceDiagramFactory extends AbstractUmlSystemCommandFactory {
 
 		addCommonCommands(system);
 
-		addCommand(new CommandParticipant(system));
-		addCommand(new CommandParticipant2(system));
+		addCommand(new CommandActivate(system));
+		
+		addCommand(new CommandParticipantA(system));
+		addCommand(new CommandParticipantA2(system));
+		addCommand(new CommandParticipantA3(system));
+		addCommand(new CommandParticipantA4(system));
 		addCommand(new CommandArrow(system));
+		addCommand(new CommandArrowCrossX(system));
 		addCommand(new CommandExoArrowLeft(system));
 		addCommand(new CommandExoArrowRight(system));
 		addCommand(new CommandNoteSequence(system));
@@ -81,9 +94,9 @@ public class SequenceDiagramFactory extends AbstractUmlSystemCommandFactory {
 		addCommand(new CommandBoxStart(system));
 		addCommand(new CommandBoxEnd(system));
 		addCommand(new CommandGrouping(system));
-		
-		addCommand(new CommandActivate(system));
+
 		addCommand(new CommandActivate2(system));
+		addCommand(new CommandReturn(system));
 
 		addCommand(new CommandNoteOnArrow(system));
 
@@ -95,16 +108,28 @@ public class SequenceDiagramFactory extends AbstractUmlSystemCommandFactory {
 		addCommand(new CommandIgnoreNewpage(system));
 		addCommand(new CommandAutoNewpage(system));
 		addCommand(new CommandDivider(system));
+		addCommand(new CommandReferenceOverSeveral(system));
+		addCommand(new CommandReferenceMultilinesOverSeveral(system));
 		addCommand(new CommandSkin(system));
 		addCommand(new CommandAutonumber(system));
+		addCommand(new CommandAutoactivate(system));
 		addCommand(new CommandFootbox(system));
 		addCommand(new CommandDelay(system));
 		addCommand(new CommandFootboxOld(system));
-		
+		addCommand(new CommandUrl(system));
+
 	}
 
 	public SequenceDiagram getSystem() {
 		return system;
+	}
+
+	@Override
+	public String checkFinalError() {
+		if (system.isHideUnlinkedData()) {
+			system.removeHiddenParticipants();
+		}
+		return super.checkFinalError();
 	}
 
 }

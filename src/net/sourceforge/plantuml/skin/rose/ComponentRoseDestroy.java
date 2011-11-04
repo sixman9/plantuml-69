@@ -28,32 +28,31 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 4169 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
-import java.awt.geom.Dimension2D;
-
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.skin.AbstractComponent;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.UStroke;
 
 public class ComponentRoseDestroy extends AbstractComponent {
 
-	private final Color foregroundColor;
+	private final HtmlColor foregroundColor;
 
-	public ComponentRoseDestroy(Color foregroundColor) {
+	public ComponentRoseDestroy(HtmlColor foregroundColor) {
 		this.foregroundColor = foregroundColor;
 	}
 
 	private final int crossSize = 9;
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
 		ug.getParam().setStroke(new UStroke(2));
 
 		ug.getParam().setColor(foregroundColor);

@@ -28,20 +28,21 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 4189 $
+ * Revision $Revision: 7236 $
  *
  */
 package net.sourceforge.plantuml.skin;
 
 import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
 import net.sourceforge.plantuml.ugraphic.UEllipse;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
@@ -58,15 +59,15 @@ public class StickMan implements UDrawable {
 	private final double legsY = 15;
 	private final double headDiam = 16;
 
-	private final Color backgroundColor;
-	private final Color foregroundColor;
+	private final HtmlColor backgroundColor;
+	private final HtmlColor foregroundColor;
 
-	public StickMan(Color backgroundColor, Color foregroundColor) {
+	public StickMan(HtmlColor backgroundColor, HtmlColor foregroundColor) {
 		this.backgroundColor = backgroundColor;
 		this.foregroundColor = foregroundColor;
 	}
 
-	public void draw(Graphics2D g2d) {
+	public void draw(ColorMapper colorMapper, Graphics2D g2d) {
 
 		g2d.setStroke(new BasicStroke(thickness));
 
@@ -87,10 +88,10 @@ public class StickMan implements UDrawable {
 		final Shape legs1 = new Line2D.Double(centerX, y, centerX - legsX, y + legsY);
 		final Shape legs2 = new Line2D.Double(centerX, y, centerX + legsX, y + legsY);
 
-		g2d.setColor(backgroundColor);
+		g2d.setColor(colorMapper.getMappedColor(backgroundColor));
 		g2d.fill(head);
 
-		g2d.setColor(foregroundColor);
+		g2d.setColor(colorMapper.getMappedColor(foregroundColor));
 		g2d.draw(head);
 		g2d.draw(body);
 		g2d.draw(arms);
@@ -111,13 +112,19 @@ public class StickMan implements UDrawable {
 		final double centerX = startX + headDiam / 2;
 
 		final ULine body = new ULine(0, bodyLenght);
-
 		final ULine arms = new ULine(armsLenght * 2, 0);
 
 		final double y = headDiam + thickness + bodyLenght;
 
 		final ULine legs1 = new ULine(-legsX, legsY);
 		final ULine legs2 = new ULine(legsX, legsY);
+		if (deltaShadow != 0) {
+			head.setDeltaShadow(deltaShadow);
+			body.setDeltaShadow(deltaShadow);
+			arms.setDeltaShadow(deltaShadow);
+			legs1.setDeltaShadow(deltaShadow);
+			legs2.setDeltaShadow(deltaShadow);
+		}
 
 		ug.getParam().setBackcolor(backgroundColor);
 		ug.getParam().setColor(foregroundColor);
@@ -139,4 +146,9 @@ public class StickMan implements UDrawable {
 		return headDiam + bodyLenght + legsY + 2 * thickness;
 	}
 
+	private double deltaShadow;
+
+	public void setDeltaShadow(double deltaShadow) {
+		this.deltaShadow = deltaShadow;
+	}
 }

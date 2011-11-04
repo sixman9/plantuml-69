@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  *
- * Revision $Revision: 5877 $
+ * Revision $Revision: 7393 $
  *
  */
 package net.sourceforge.plantuml;
@@ -57,8 +57,15 @@ public class Option {
 	private boolean decodeurl = false;
 	private boolean pipe = false;
 	private boolean syntax = false;
+	private boolean checkOnly = false;
+	private boolean pattern = false;
+	private boolean duration = false;
+	private int nbThreads = 0;
+	private int ftpPort = -1;
 
 	private File outputDir = null;
+	private File outputFile = null;
+
 	private final List<String> result = new ArrayList<String>();
 
 	public Option() {
@@ -82,6 +89,8 @@ public class Option {
 			String s = arg[i];
 			if (s.equalsIgnoreCase("-tsvg") || s.equalsIgnoreCase("-svg")) {
 				setFileFormat(FileFormat.SVG);
+			} else if (s.equalsIgnoreCase("-thtml") || s.equalsIgnoreCase("-html")) {
+				setFileFormat(FileFormat.HTML);
 			} else if (s.equalsIgnoreCase("-txmi") || s.equalsIgnoreCase("-xmi")) {
 				setFileFormat(FileFormat.XMI_STANDARD);
 			} else if (s.equalsIgnoreCase("-txmi:argo") || s.equalsIgnoreCase("-xmi:argo")) {
@@ -90,16 +99,29 @@ public class Option {
 				setFileFormat(FileFormat.XMI_STAR);
 			} else if (s.equalsIgnoreCase("-teps") || s.equalsIgnoreCase("-eps")) {
 				setFileFormat(FileFormat.EPS);
+			} else if (s.equalsIgnoreCase("-teps:text") || s.equalsIgnoreCase("-eps:text")) {
+				setFileFormat(FileFormat.EPS_TEXT);
+			} else if (s.equalsIgnoreCase("-tdot") || s.equalsIgnoreCase("-dot")) {
+				setFileFormat(FileFormat.DOT);
+				OptionFlags.getInstance().setKeepTmpFiles(true);
 			} else if (s.equalsIgnoreCase("-ttxt") || s.equalsIgnoreCase("-txt")) {
 				setFileFormat(FileFormat.ATXT);
 			} else if (s.equalsIgnoreCase("-tutxt") || s.equalsIgnoreCase("-utxt")) {
 				setFileFormat(FileFormat.UTXT);
+			} else if (s.equalsIgnoreCase("-pdf") || s.equalsIgnoreCase("-tpdf")) {
+				setFileFormat(FileFormat.PDF);
 			} else if (s.equalsIgnoreCase("-output") || s.equalsIgnoreCase("-o")) {
 				i++;
 				if (i == arg.length) {
 					continue;
 				}
 				outputDir = new File(StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(arg[i]));
+			} else if (s.equalsIgnoreCase("-ofile")) {
+				i++;
+				if (i == arg.length) {
+					continue;
+				}
+				outputFile = new File(StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(arg[i]));
 			} else if (s.equalsIgnoreCase("-graphvizdot") || s.equalsIgnoreCase("-graphviz_dot")) {
 				i++;
 				if (i == arg.length) {
@@ -124,6 +146,20 @@ public class Option {
 					continue;
 				}
 				excludes.add(StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(arg[i]));
+			} else if (s.equalsIgnoreCase("-nbthread") || s.equalsIgnoreCase("-nbthreads")) {
+				i++;
+				if (i == arg.length) {
+					continue;
+				}
+				final String nb = arg[i];
+				if ("auto".equalsIgnoreCase(nb)) {
+					this.nbThreads = defaultNbThreads();
+				} else if (nb.matches("\\d+")) {
+					this.nbThreads = Integer.parseInt(nb);
+				}
+			} else if (s.equalsIgnoreCase("-checkonly")) {
+				this.checkOnly = true;
+				OptionFlags.getInstance().setFailOnError(true);
 			} else if (s.equalsIgnoreCase("-config")) {
 				i++;
 				if (i == arg.length) {
@@ -132,9 +168,6 @@ public class Option {
 				initConfig(StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(arg[i]));
 			} else if (s.equalsIgnoreCase("-computeurl") || s.equalsIgnoreCase("-encodeurl")) {
 				this.computeurl = true;
-			} else if (s.startsWith("-c")) {
-				s = s.substring(2);
-				config.add(StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(s));
 			} else if (s.startsWith("-x")) {
 				s = s.substring(2);
 				excludes.add(StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(s));
@@ -144,13 +177,24 @@ public class Option {
 				OptionFlags.getInstance().setVerbose(true);
 			} else if (s.equalsIgnoreCase("-pipe") || s.equalsIgnoreCase("-p")) {
 				pipe = true;
+			} else if (s.equalsIgnoreCase("-pattern")) {
+				pattern = true;
 			} else if (s.equalsIgnoreCase("-syntax")) {
 				syntax = true;
 				OptionFlags.getInstance().setQuiet(true);
+			} else if (s.equalsIgnoreCase("-duration")) {
+				duration = true;
 			} else if (s.equalsIgnoreCase("-keepfiles") || s.equalsIgnoreCase("-keepfile")) {
 				OptionFlags.getInstance().setKeepTmpFiles(true);
 			} else if (s.equalsIgnoreCase("-metadata")) {
 				OptionFlags.getInstance().setMetadata(true);
+			} else if (s.equalsIgnoreCase("-logdata")) {
+				i++;
+				if (i == arg.length) {
+					continue;
+				}
+				OptionFlags.getInstance().setLogData(
+						new File(StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(arg[i])));
 			} else if (s.equalsIgnoreCase("-word")) {
 				OptionFlags.getInstance().setWord(true);
 				OptionFlags.getInstance().setQuiet(true);
@@ -164,8 +208,12 @@ public class Option {
 				this.decodeurl = true;
 			} else if (s.equalsIgnoreCase("-version")) {
 				OptionPrint.printVersion();
+			} else if (s.equalsIgnoreCase("-checkversion")) {
+				OptionPrint.checkVersion();
 			} else if (s.startsWith("-D")) {
 				manageDefine(s.substring(2));
+			} else if (s.startsWith("-S")) {
+				manageSkinParam(s.substring(2));
 			} else if (s.equalsIgnoreCase("-testdot")) {
 				OptionPrint.printTestDot();
 			} else if (s.equalsIgnoreCase("-about") || s.equalsIgnoreCase("-author") || s.equalsIgnoreCase("-authors")) {
@@ -176,10 +224,30 @@ public class Option {
 				OptionPrint.printLanguage();
 			} else if (s.equalsIgnoreCase("-gui")) {
 				OptionFlags.getInstance().setGui(true);
+			} else if (s.equalsIgnoreCase("-nosuggestengine")) {
+				OptionFlags.getInstance().setUseSuggestEngine(false);
+			} else if (s.equalsIgnoreCase("-failonerror")) {
+				OptionFlags.getInstance().setFailOnError(true);
+			} else if (s.equalsIgnoreCase("-printfonts")) {
+				OptionFlags.getInstance().setPrintFonts(true);
+			} else if (s.toLowerCase().startsWith("-ftp")) {
+				final int x = s.indexOf(':');
+				if (x == -1) {
+					this.ftpPort = 4242;
+				} else {
+					this.ftpPort = Integer.parseInt(s.substring(x + 1));
+				}
+			} else if (s.startsWith("-c")) {
+				s = s.substring(2);
+				config.add(StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(s));
 			} else {
 				result.add(s);
 			}
 		}
+	}
+
+	public int getFtpPort() {
+		return ftpPort;
 	}
 
 	public void initConfig(String filename) throws IOException {
@@ -203,6 +271,21 @@ public class Option {
 		if (m.find()) {
 			define(m.group(1), m.group(2));
 		}
+	}
+
+	private void manageSkinParam(String s) {
+		final Pattern p = Pattern.compile("^(\\w+)(?:=(.*))?$");
+		final Matcher m = p.matcher(s);
+		if (m.find()) {
+			skinParam(m.group(1), m.group(2));
+		}
+	}
+
+	private void skinParam(String var, String value) {
+		if (var != null && value != null) {
+			config.add("skinparamlocked " + var + " " + value);
+		}
+
 	}
 
 	public final File getOutputDir() {
@@ -267,8 +350,40 @@ public class Option {
 		return syntax;
 	}
 
+	public final boolean isPattern() {
+		return pattern;
+	}
+
 	public FileFormatOption getFileFormatOption() {
 		return new FileFormatOption(getFileFormat());
+	}
+
+	public final boolean isDuration() {
+		return duration;
+	}
+
+	public final int getNbThreads() {
+		return nbThreads;
+	}
+
+	public final void setNbThreads(int nb) {
+		this.nbThreads = nb;
+	}
+
+	public static int defaultNbThreads() {
+		return Runtime.getRuntime().availableProcessors();
+	}
+
+	public final boolean isCheckOnly() {
+		return checkOnly;
+	}
+
+	public final void setCheckOnly(boolean checkOnly) {
+		this.checkOnly = checkOnly;
+	}
+
+	public final File getOutputFile() {
+		return outputFile;
 	}
 
 }

@@ -33,11 +33,8 @@
  */
 package net.sourceforge.plantuml.xmi;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
+import java.io.OutputStream;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -57,13 +54,21 @@ public final class CucaDiagramXmiMaker {
 		this.fileFormat = fileFormat;
 	}
 
-	public List<File> createFiles(File suggestedFile) throws IOException {
+	public void createFiles(OutputStream fos) throws IOException {
 		try {
-			final XmiClassDiagram xmi = new XmiClassDiagram((ClassDiagram) diagram, fileFormat);
-			final FileOutputStream fos = new FileOutputStream(suggestedFile);
+			final IXmiClassDiagram xmi;
+			if (fileFormat == FileFormat.XMI_STANDARD) {
+				xmi = new XmiClassDiagramStandard((ClassDiagram) diagram);
+			} else if (fileFormat == FileFormat.XMI_ARGO) {
+				xmi = new XmiClassDiagramArgo((ClassDiagram) diagram);
+			} else if (fileFormat == FileFormat.XMI_STAR) {
+				xmi = new XmiClassDiagramStar((ClassDiagram) diagram);
+			} else {
+				throw new UnsupportedOperationException();
+			}
 			xmi.transformerXml(fos);
-			fos.close();
-			return Collections.singletonList(suggestedFile);
+			// fos.close();
+			// return Collections.singletonList(suggestedFile);
 		} catch (ParserConfigurationException e) {
 			Log.error(e.toString());
 			e.printStackTrace();

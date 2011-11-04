@@ -34,6 +34,8 @@
 package net.sourceforge.plantuml.classdiagram.command;
 
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.sourceforge.plantuml.Direction;
 import net.sourceforge.plantuml.FontParam;
@@ -72,14 +74,15 @@ final public class CommandLinkClass2 extends SingleLineCommand2<AbstractClassOrO
 				new RegexLeaf("\\s*"),
 				new RegexLeaf("FIRST_LABEL", "(?:\"([^\"]+)\")?"),
 				new RegexLeaf("\\s*"),
-				new RegexOr(new RegexLeaf("LEFT_TO_RIGHT",
-						"(([-=.]+)(left|right|up|down|le?|ri?|up?|do?)?([-=.]*)(o +|[\\]>*+]|\\|[>\\]])?)"),
+				new RegexOr(
+						new RegexLeaf("LEFT_TO_RIGHT",
+								"(([-=.]+)(?:(left|right|up|down|le?|ri?|up?|do?)(?=[-=.]))?([-=.]*)(o +|[\\]>*+^]|\\|[>\\]])?)"),
 						new RegexLeaf("RIGHT_TO_LEFT",
-								"(( +o|[\\[<*+]|[<\\[]\\|)?([-=.]*)(left|right|up|down|le?|ri?|up?|do?)?([-=.]+))"),
+								"(( +o|[\\[<*+^]|[<\\[]\\|)?([-=.]*)(left|right|up|down|le?|ri?|up?|do?)?([-=.]+))"),
 						new RegexLeaf("NAV_AGREG_OR_COMPO_INV",
 								"(\\<([-=.]*)(left|right|up|down|le?|ri?|up?|do?[-=.]+)?([-=.]+)(o +|\\*))"),
 						new RegexLeaf("NAV_AGREG_OR_COMPO",
-								"(( +o|\\*)([-=.]+)(left|right|up|down|le?|ri?|up?|do?)?([-=.]*)\\>)")),
+								"(( +o|\\*)([-=.]+)(?:(left|right|up|down|le?|ri?|up?|do?)(?=[-=.]))?([-=.]*)\\>)")),
 				new RegexLeaf("\\s*"),
 				new RegexLeaf("SECOND_LABEL", "(?:\"([^\"]+)\")?"),
 				new RegexLeaf("\\s*"),
@@ -88,7 +91,9 @@ final public class CommandLinkClass2 extends SingleLineCommand2<AbstractClassOrO
 								+ "(\\.?[\\p{L}0-9_]+(?:\\.[\\p{L}0-9_]+)*|\"[^\"]+\")\\s*(\\<\\<.*\\>\\>)?"),
 						new RegexLeaf("COUPLE2",
 								"\\(\\s*(\\.?[\\p{L}0-9_]+(?:\\.[\\p{L}0-9_]+)*)\\s*,\\s*(\\.?[\\p{L}0-9_]+(?:\\.[\\p{L}0-9_]+)*)\\s*\\)")),
-				new RegexLeaf("\\s*"), new RegexLeaf("LABEL_LINK", "(?::\\s*([^\"]+))?$"));
+				// new RegexLeaf("\\s*"), new RegexLeaf("LABEL_LINK",
+				// "(?::\\s*([^\"]+))?$"));
+				new RegexLeaf("\\s*"), new RegexLeaf("LABEL_LINK", "(?::\\s*(.+))?"), new RegexLeaf("$"));
 	}
 
 	private static String optionalKeywords(UmlDiagramType type) {
@@ -160,8 +165,51 @@ final public class CommandLinkClass2 extends SingleLineCommand2<AbstractClassOrO
 			dir = dir.getInv();
 		}
 
-		Link link = new Link(cl1, cl2, linkType, arg.get("LABEL_LINK").get(0), queue.length(), arg.get("FIRST_LABEL")
-				.get(0), arg.get("SECOND_LABEL").get(0), getSystem().getLabeldistance(), getSystem().getLabelangle());
+		String firstLabel = arg.get("FIRST_LABEL").get(0);
+		String secondLabel = arg.get("SECOND_LABEL").get(0);
+
+		String labelLink = null;
+
+		if (arg.get("LABEL_LINK").get(0) != null) {
+			labelLink = arg.get("LABEL_LINK").get(0);
+			if (firstLabel == null && secondLabel == null) {
+				final Pattern p1 = Pattern.compile("^\"([^\"]+)\"([^\"]+)\"([^\"]+)\"$");
+				final Matcher m1 = p1.matcher(labelLink);
+				if (m1.matches()) {
+					firstLabel = m1.group(1);
+					labelLink = StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(m1.group(2).trim()).trim();
+					secondLabel = m1.group(3);
+				} else {
+					final Pattern p2 = Pattern.compile("^\"([^\"]+)\"([^\"]+)$");
+					final Matcher m2 = p2.matcher(labelLink);
+					if (m2.matches()) {
+						firstLabel = m2.group(1);
+						labelLink = StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(m2.group(2).trim()).trim();
+						secondLabel = null;
+					} else {
+						final Pattern p3 = Pattern.compile("^([^\"]+)\"([^\"]+)\"$");
+						final Matcher m3 = p3.matcher(labelLink);
+						if (m3.matches()) {
+							firstLabel = null;
+							labelLink = StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(m3.group(1).trim())
+									.trim();
+							secondLabel = m3.group(2);
+						}
+					}
+				}
+			}
+			labelLink = StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(labelLink);
+		} /*
+			 * else if (arg.get("LABEL_LINK_XT").get(0) != null ||
+			 * arg.get("LABEL_LINK_XT").get(1) != null ||
+			 * arg.get("LABEL_LINK_XT").get(2) != null) { labelLink =
+			 * arg.get("LABEL_LINK_XT").get(1); firstLabel = merge(firstLabel,
+			 * arg.get("LABEL_LINK_XT").get(0)); secondLabel =
+			 * merge(arg.get("LABEL_LINK_XT").get(2), secondLabel); }
+			 */
+
+		Link link = new Link(cl1, cl2, linkType, labelLink, queue.length(), firstLabel, secondLabel, getSystem()
+				.getLabeldistance(), getSystem().getLabelangle());
 
 		if (dir == Direction.LEFT || dir == Direction.UP) {
 			link = link.getInv();
@@ -172,6 +220,21 @@ final public class CommandLinkClass2 extends SingleLineCommand2<AbstractClassOrO
 
 		return CommandExecutionResult.ok();
 	}
+
+	// private String merge(String a, String b) {
+	// if (a == null && b == null) {
+	// return null;
+	// }
+	// if (a == null && b != null) {
+	// return StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(b);
+	// }
+	// if (b == null && a != null) {
+	// return StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(a);
+	// }
+	// return StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(a) +
+	// "\\n"
+	// + StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(b);
+	// }
 
 	private void addLink(Link link, String weight) {
 		getSystem().addLink(link);
@@ -196,8 +259,8 @@ final public class CommandLinkClass2 extends SingleLineCommand2<AbstractClassOrO
 	}
 
 	private CommandExecutionResult executePackageLink(Map<String, RegexPartialMatch> arg) {
-		final String ent1 = arg.get("ENT1").get(1);
-		final String ent2 = arg.get("ENT2").get(1);
+		final String ent1 = StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(arg.get("ENT1").get(1));
+		final String ent2 = StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(arg.get("ENT2").get(1));
 		final Group cl1 = getSystem().getGroup(ent1);
 		final Group cl2 = getSystem().getGroup(ent2);
 
@@ -210,9 +273,11 @@ final public class CommandLinkClass2 extends SingleLineCommand2<AbstractClassOrO
 			queue = getQueue(arg);
 		}
 
-		Link link = new Link(cl1.getEntityCluster(), cl2.getEntityCluster(), linkType, arg.get("LABEL_LINK").get(0),
-				queue.length(), arg.get("FIRST_LABEL").get(0), arg.get("SECOND_LABEL").get(0), getSystem()
-						.getLabeldistance(), getSystem().getLabelangle());
+		final String labelLink = arg.get("LABEL_LINK").get(0);
+		final String firstLabel = arg.get("FIRST_LABEL").get(0);
+		final String secondLabel = arg.get("SECOND_LABEL").get(0);
+		Link link = new Link(cl1.getEntityCluster(), cl2.getEntityCluster(), linkType, labelLink, queue.length(),
+				firstLabel, secondLabel, getSystem().getLabeldistance(), getSystem().getLabelangle());
 		if (dir == Direction.LEFT || dir == Direction.UP) {
 			link = link.getInv();
 		}
@@ -232,7 +297,7 @@ final public class CommandLinkClass2 extends SingleLineCommand2<AbstractClassOrO
 			return CommandExecutionResult.error("No class " + clName2);
 		}
 
-		final String ent2 = arg.get("ENT2").get(1);
+		final String ent2 = StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(arg.get("ENT2").get(1));
 		final IEntity cl2 = getSystem().getOrCreateClass(ent2);
 
 		final LinkType linkType = getLinkType(arg);
@@ -258,7 +323,7 @@ final public class CommandLinkClass2 extends SingleLineCommand2<AbstractClassOrO
 			return CommandExecutionResult.error("No class " + clName2);
 		}
 
-		final String ent1 = arg.get("ENT1").get(1);
+		final String ent1 = StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(arg.get("ENT1").get(1));
 		final IEntity cl1 = getSystem().getOrCreateClass(ent1);
 
 		final LinkType linkType = getLinkType(arg);
@@ -391,6 +456,9 @@ final public class CommandLinkClass2 extends SingleLineCommand2<AbstractClassOrO
 			return new LinkType(LinkDecor.ARROW, LinkDecor.NONE);
 		}
 		if (k.equals("<|") || k.equals("|>")) {
+			return new LinkType(LinkDecor.EXTENDS, LinkDecor.NONE);
+		}
+		if (k.equals("^")) {
 			return new LinkType(LinkDecor.EXTENDS, LinkDecor.NONE);
 		}
 		// return null;

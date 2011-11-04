@@ -28,12 +28,10 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 4168 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.skin;
-
-import java.awt.geom.Dimension2D;
 
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
@@ -44,6 +42,6 @@ public interface Component {
 
 	double getPreferredHeight(StringBounder stringBounder);
 
-	void drawU(UGraphic ug, Dimension2D dimensionToUse, Context2D context);
+	void drawU(UGraphic ug, Area area, Context2D context);
 
 }

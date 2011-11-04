@@ -28,15 +28,15 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5207 $
+ * Revision $Revision: 6502 $
  *
  */
 package net.sourceforge.plantuml.preproc;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,15 +44,31 @@ import net.sourceforge.plantuml.FileSystem;
 
 class PreprocessorInclude implements ReadLine {
 
-	private static final Pattern includePattern = Pattern.compile("^!include\\s+\"?([^\"]+)\"?$");
+	private static final Pattern includePattern = Pattern.compile("^\\s*!include\\s+\"?([^\"]+)\"?$");
 
 	private final ReadLine reader2;
 	private int numLine = 0;
 
 	private PreprocessorInclude included = null;
 
-	public PreprocessorInclude(ReadLine reader) {
+	private final File oldCurrentDir;
+	private final Set<File> filesUsed;
+
+	public PreprocessorInclude(ReadLine reader, Set<File> filesUsed, File newCurrentDir) {
 		this.reader2 = reader;
+		this.filesUsed = filesUsed;
+		if (newCurrentDir == null) {
+			oldCurrentDir = null;
+		} else {
+			oldCurrentDir = FileSystem.getInstance().getCurrentDir();
+			FileSystem.getInstance().setCurrentDir(newCurrentDir);
+		}
+	}
+
+	private void restoreCurrentDir() {
+		if (oldCurrentDir != null) {
+			FileSystem.getInstance().setCurrentDir(oldCurrentDir);
+		}
 	}
 
 	public String readLine() throws IOException {
@@ -80,13 +96,33 @@ class PreprocessorInclude implements ReadLine {
 
 	}
 
-	private String manageInclude(Matcher m) throws IOException, FileNotFoundException {
-		final String fileName = m.group(1);
+	private String manageInclude(Matcher m) throws IOException {
+		String fileName = m.group(1);
+		final int idx = fileName.lastIndexOf('!');
+		String suf = null;
+		if (idx != -1) {
+			suf = fileName.substring(idx + 1);
+			fileName = fileName.substring(0, idx);
+		}
 		final File f = FileSystem.getInstance().getFile(fileName);
 		if (f.exists()) {
-			included = new PreprocessorInclude(new ReadLineReader(new FileReader(f)));
+			filesUsed.add(f);
+			included = new PreprocessorInclude(getReaderInclude(f, suf), filesUsed, f.getParentFile());
+		} else {
+			return "Cannot include " + f.getAbsolutePath();
 		}
 		return this.readLine();
+	}
+
+	private ReadLine getReaderInclude(final File f, String suf) throws IOException {
+		if (StartDiagramExtractReader.containsStartDiagram(f)) {
+			int bloc = 0;
+			if (suf != null && suf.matches("\\d+")) {
+				bloc = Integer.parseInt(suf);
+			}
+			return new StartDiagramExtractReader(f, bloc);
+		}
+		return new ReadLineReader(new FileReader(f));
 	}
 
 	public int getLineNumber() {
@@ -94,6 +130,7 @@ class PreprocessorInclude implements ReadLine {
 	}
 
 	public void close() throws IOException {
+		restoreCurrentDir();
 		reader2.close();
 	}
 

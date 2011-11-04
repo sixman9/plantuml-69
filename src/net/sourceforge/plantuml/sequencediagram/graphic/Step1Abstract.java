@@ -34,12 +34,11 @@
 package net.sourceforge.plantuml.sequencediagram.graphic;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
+import net.sourceforge.plantuml.Url;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.sequencediagram.AbstractMessage;
-import net.sourceforge.plantuml.sequencediagram.InGroupableList;
 import net.sourceforge.plantuml.sequencediagram.LifeEvent;
 import net.sourceforge.plantuml.sequencediagram.LifeEventType;
 import net.sourceforge.plantuml.sequencediagram.MessageNumber;
@@ -56,20 +55,31 @@ abstract class Step1Abstract {
 
 	private final AbstractMessage message;
 
-	private double freeY;
+	private Frontier freeY2;
 
 	private ComponentType type;
 
 	private Component note;
 
-	Step1Abstract(StringBounder stringBounder, AbstractMessage message, DrawableSet drawingSet, double freeY) {
+	private ParticipantRange range;
+
+	Step1Abstract(ParticipantRange range, StringBounder stringBounder, AbstractMessage message, DrawableSet drawingSet,
+			Frontier freeY2) {
+		if (freeY2 == null) {
+			throw new IllegalArgumentException();
+		}
+		this.range = range;
 		this.stringBounder = stringBounder;
 		this.message = message;
-		this.freeY = freeY;
+		this.freeY2 = freeY2;
 		this.drawingSet = drawingSet;
 	}
 
-	abstract double prepareMessage(ConstraintSet constraintSet, Collection<InGroupableList> groupingStructures);
+	protected final ParticipantRange getParticipantRange() {
+		return range;
+	}
+
+	abstract Frontier prepareMessage(ConstraintSet constraintSet, InGroupablesStack groupingStructures);
 
 	protected final List<? extends CharSequence> getLabelOfMessage(AbstractMessage message) {
 		if (message.getMessageNumber() == null) {
@@ -89,7 +99,12 @@ abstract class Step1Abstract {
 			return;
 		}
 		assert n.getType() == LifeEventType.ACTIVATE;
-		line.addSegmentVariation(LifeSegmentVariation.LARGER, pos, n.getSpecificBackColor());
+
+		int delta = 0;
+		if (message.isCreate()) {
+			delta += 10;
+		}
+		line.addSegmentVariation(LifeSegmentVariation.LARGER, pos + delta, n.getSpecificBackColor());
 	}
 
 	protected final void afterMessage(StringBounder stringBounder, LifeEvent n, final double pos) {
@@ -106,12 +121,20 @@ abstract class Step1Abstract {
 			final double delta = comp.getPreferredHeight(stringBounder) / 2;
 			final LifeDestroy destroy = new LifeDestroy(pos - delta, drawingSet.getLivingParticipantBox(p)
 					.getParticipantBox(), comp);
+			if (lifelineAfterDestroy()) {
+				line.setDestroy(pos);
+			}
 			drawingSet.addEvent(n, destroy);
 		} else if (n.getType() != LifeEventType.DEACTIVATE) {
 			throw new IllegalStateException();
 		}
 
 		line.addSegmentVariation(LifeSegmentVariation.SMALLER, pos, n.getSpecificBackColor());
+	}
+
+	private boolean lifelineAfterDestroy() {
+		final String v = drawingSet.getSkinParam().getValue("lifelineafterdestroy");
+		return false;
 	}
 
 	protected final ComponentType getType() {
@@ -142,21 +165,29 @@ abstract class Step1Abstract {
 		return drawingSet;
 	}
 
-	protected final double getFreeY() {
-		return freeY;
+	protected final Frontier getFreeY() {
+		return freeY2;
 	}
 
 	protected final void incFreeY(double v) {
-		freeY += v;
+		freeY2 = freeY2.add(v, range);
 	}
 
-	protected final NoteBox createNoteBox(StringBounder stringBounder, Arrow arrow, Component noteComp, NotePosition notePosition) {
+	protected final NoteBox createNoteBox(StringBounder stringBounder, Arrow arrow, Component noteComp,
+			NotePosition notePosition, Url url) {
 		final LivingParticipantBox p = arrow.getParticipantAt(stringBounder, notePosition);
-		final NoteBox noteBox = new NoteBox(arrow.getStartingY(), noteComp, p, null, notePosition);
+		final NoteBox noteBox = new NoteBox(arrow.getStartingY(), noteComp, p, null, notePosition, url);
 
 		if (arrow instanceof MessageSelfArrow && notePosition == NotePosition.RIGHT) {
 			noteBox.pushToRight(arrow.getPreferredWidth(stringBounder));
 		}
+		// if (arrow instanceof MessageExoArrow) {
+		// final MessageExoType type = ((MessageExoArrow) arrow).getType();
+		// if (type.isRightBorder()) {
+		// final double width = noteBox.getPreferredWidth(stringBounder);
+		// noteBox.pushToRight(-width);
+		// }
+		// }
 
 		return noteBox;
 	}

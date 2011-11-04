@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 6026 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram.graphic;
@@ -36,9 +36,11 @@ package net.sourceforge.plantuml.sequencediagram.graphic;
 import java.awt.geom.Dimension2D;
 
 import net.sourceforge.plantuml.Dimension2DDouble;
+import net.sourceforge.plantuml.Url;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.sequencediagram.InGroupable;
 import net.sourceforge.plantuml.sequencediagram.NotePosition;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.skin.Component;
 import net.sourceforge.plantuml.skin.Context2D;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
@@ -46,6 +48,7 @@ import net.sourceforge.plantuml.ugraphic.UGraphic;
 class NoteBox extends GraphicalElement implements InGroupable {
 
 	private final NotePosition position;
+	private final Url url;
 
 	private final LivingParticipantBox p1;
 	private final LivingParticipantBox p2;
@@ -55,7 +58,7 @@ class NoteBox extends GraphicalElement implements InGroupable {
 	private double delta = 0;
 
 	public NoteBox(double startingY, Component comp, LivingParticipantBox p1, LivingParticipantBox p2,
-			NotePosition position) {
+			NotePosition position, Url url) {
 		super(startingY);
 		if (p1 == null) {
 			throw new IllegalArgumentException();
@@ -66,6 +69,7 @@ class NoteBox extends GraphicalElement implements InGroupable {
 		this.p1 = p1;
 		this.p2 = p2;
 		this.position = position;
+		this.url = url;
 		this.comp = comp;
 	}
 
@@ -86,7 +90,13 @@ class NoteBox extends GraphicalElement implements InGroupable {
 		ug.translate(xStart, getStartingY());
 		final Dimension2D dimensionToUse = new Dimension2DDouble(comp.getPreferredWidth(stringBounder), comp
 				.getPreferredHeight(stringBounder));
-		comp.drawU(ug, dimensionToUse, context);
+		if (url != null) {
+			ug.setUrl(url.getUrl(), url.getTooltip());
+		}
+		comp.drawU(ug, new Area(dimensionToUse), context);
+		if (url != null) {
+			ug.setUrl(null, null);
+		}
 	}
 
 	@Override
@@ -134,6 +144,10 @@ class NoteBox extends GraphicalElement implements InGroupable {
 
 	public String toString(StringBounder stringBounder) {
 		return toString();
+	}
+
+	public final Url getUrl() {
+		return url;
 	}
 
 }

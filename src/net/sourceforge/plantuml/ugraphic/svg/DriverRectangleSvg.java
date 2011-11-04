@@ -33,9 +33,10 @@ package net.sourceforge.plantuml.ugraphic.svg;
 
 import java.awt.geom.Rectangle2D;
 
-import net.sourceforge.plantuml.graphic.HtmlColor;
+import net.sourceforge.plantuml.StringUtils;
 import net.sourceforge.plantuml.svg.SvgGraphics;
 import net.sourceforge.plantuml.ugraphic.ClipContainer;
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
 import net.sourceforge.plantuml.ugraphic.UClip;
 import net.sourceforge.plantuml.ugraphic.UDriver;
 import net.sourceforge.plantuml.ugraphic.UGradient;
@@ -51,23 +52,31 @@ public class DriverRectangleSvg implements UDriver<SvgGraphics> {
 		this.clipContainer = clipContainer;
 	}
 
-	public void draw(UShape ushape, double x, double y, UParam param, SvgGraphics svg) {
+	public void draw(UShape ushape, double x, double y, ColorMapper mapper, UParam param, SvgGraphics svg) {
 		final URectangle rect = (URectangle) ushape;
 
 		final double rx = rect.getRx();
 		final double ry = rect.getRy();
 		double width = rect.getWidth();
 		double height = rect.getHeight();
+		
+		// Shadow
+		if (rect.getDeltaShadow() != 0) {
+			svg.svgRectangleShadow(x, y, width, height, rx / 2, ry / 2, rect.getDeltaShadow());
+		}
+
 
 		final UGradient gr = param.getGradient();
 		if (gr == null) {
-			final String color = param.getColor() == null ? "none" : HtmlColor.getAsHtml(param.getColor());
-			final String backcolor = param.getBackcolor() == null ? "none" : HtmlColor.getAsHtml(param.getBackcolor());
+			final String color = param.getColor() == null ? "none" : StringUtils.getAsHtml(mapper.getMappedColor(param
+					.getColor()));
+			final String backcolor = param.getBackcolor() == null ? "none" : StringUtils.getAsHtml(mapper
+					.getMappedColor(param.getBackcolor()));
 			svg.setFillColor(backcolor);
 			svg.setStrokeColor(color);
 		} else {
-			final String id = svg.createSvgGradient(HtmlColor.getAsHtml(gr.getColor1()), HtmlColor.getAsHtml(gr
-					.getColor2()));
+			final String id = svg.createSvgGradient(StringUtils.getAsHtml(mapper.getMappedColor(gr.getColor1())),
+					StringUtils.getAsHtml(mapper.getMappedColor(gr.getColor2())));
 			svg.setFillColor("url(#" + id + ")");
 			svg.setStrokeColor(null);
 		}
@@ -75,10 +84,8 @@ public class DriverRectangleSvg implements UDriver<SvgGraphics> {
 		svg.setStrokeWidth("" + param.getStroke().getThickness(), param.getStroke().getDasharraySvg());
 
 		final UClip clip = clipContainer.getClip();
-
 		if (clip != null) {
-			Rectangle2D.Double r = new Rectangle2D.Double(x, y, width, height);
-			r = clip.getClippedRectangle(r);
+			final Rectangle2D.Double r = clip.getClippedRectangle(new Rectangle2D.Double(x, y, width, height));
 			x = r.x;
 			y = r.y;
 			width = r.width;

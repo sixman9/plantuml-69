@@ -45,26 +45,10 @@ public class UncommentReadLine implements ReadLine {
 
 	public UncommentReadLine(ReadLine source) {
 		this.raw = source;
-		this.start = Pattern.compile("(?i)(\\W*)@startuml");
+		this.start = Pattern.compile("(?i)((?:\\W|\\<[^<>]*\\>)*)@start");
 	}
 
 	public String readLine() throws IOException {
-		String s = readLine2();
-		if (s != null) {
-			s = cleanLineFromSource(s);
-		}
-		return s;
-	}
-
-	public static String cleanLineFromSource(String s) {
-//		s = s.trim();
-//		while (s.startsWith(" ") || s.startsWith("\t")) {
-//			s = s.substring(1).trim();
-//		}
-		return s;
-	}
-
-	private String readLine2() throws IOException {
 		final String result = raw.readLine();
 
 		if (result == null) {

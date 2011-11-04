@@ -33,11 +33,14 @@
  */
 package net.sourceforge.plantuml;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import net.sourceforge.plantuml.preproc.Defines;
 import net.sourceforge.plantuml.preproc.Preprocessor;
@@ -47,11 +50,12 @@ import net.sourceforge.plantuml.preproc.UncommentReadLine;
 final public class BlockUmlBuilder {
 
 	private final List<BlockUml> blocks = new ArrayList<BlockUml>();
+	private final Set<File> usedFiles = new HashSet<File>();
 
-	public BlockUmlBuilder(List<String> config, Defines defines, Reader reader) throws IOException {
+	public BlockUmlBuilder(List<String> config, Defines defines, Reader reader, File newCurrentDir) throws IOException {
 		Preprocessor includer = null;
 		try {
-			includer = new Preprocessor(new UncommentReadLine(new ReadLineReader(reader)), defines);
+			includer = new Preprocessor(new UncommentReadLine(new ReadLineReader(reader)), defines, usedFiles, newCurrentDir);
 			init(includer, config);
 		} finally {
 			if (includer != null) {
@@ -60,33 +64,17 @@ final public class BlockUmlBuilder {
 		}
 	}
 
-	public static boolean isArobaseEnduml(String s) {
-		s = s.trim();
-		return s.equals("@enduml") || s.startsWith("@enduml ");
-	}
-
-	private boolean isIgnoredLine(final String s) {
-		// return s.length() == 0 || s.startsWith("#") || s.startsWith("'");
-		// return s.length() == 0 || s.startsWith("'");
-		return s.startsWith("'");
-	}
-
-	public static boolean isArobaseStartuml(String s) {
-		s = s.trim();
-		return s.equals("@startuml") || s.startsWith("@startuml ");
-	}
-
 	private void init(Preprocessor includer, List<String> config) throws IOException {
 		String s = null;
 		List<String> current = null;
 		while ((s = includer.readLine()) != null) {
-			if (isArobaseStartuml(s)) {
+			if (StartUtils.isArobaseStartDiagram(s)) {
 				current = new ArrayList<String>();
 			}
-			if (current != null && isIgnoredLine(s.trim()) == false) {
+			if (current != null) {
 				current.add(s);
 			}
-			if (isArobaseEnduml(s) && current != null) {
+			if (StartUtils.isArobaseEndDiagram(s) && current != null) {
 				current.addAll(1, config);
 				blocks.add(new BlockUml(current));
 				current = null;
@@ -96,6 +84,10 @@ final public class BlockUmlBuilder {
 
 	public List<BlockUml> getBlockUmls() {
 		return Collections.unmodifiableList(blocks);
+	}
+
+	public final Set<File> getIncludedFiles() {
+		return Collections.unmodifiableSet(usedFiles);
 	}
 
 	/*

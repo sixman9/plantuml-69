@@ -28,18 +28,24 @@
  *
  * Original Author:  Arnaud Roques
  *
- * Revision $Revision: 5957 $
+ * Revision $Revision: 7391 $
  *
  */
 package net.sourceforge.plantuml;
 
+import java.awt.Color;
 import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import net.sourceforge.plantuml.preproc.ReadLineReader;
+import net.sourceforge.plantuml.preproc.UncommentReadLine;
 
 public class StringUtils {
 
@@ -74,7 +80,7 @@ public class StringUtils {
 		return Collections.unmodifiableList(result);
 	}
 
-	public static String getMergedLines(List<String> strings) {
+	public static String getMergedLines(List<? extends CharSequence> strings) {
 		final StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < strings.size(); i++) {
 			sb.append(strings.get(i));
@@ -102,6 +108,10 @@ public class StringUtils {
 		return input != null && input.trim().length() > 0;
 	}
 
+	public static boolean isNotEmpty(List<? extends CharSequence> input) {
+		return input != null && input.size() > 0;
+	}
+
 	public static boolean isEmpty(String input) {
 		return input == null || input.trim().length() == 0;
 	}
@@ -112,9 +122,39 @@ public class StringUtils {
 		return s;
 	}
 
+	public static String unicode(String s) {
+		final StringBuilder result = new StringBuilder();
+		for (char c : s.toCharArray()) {
+			if (c > 127 || c == '&' || c == '|') {
+				final int i = c;
+				result.append("&#" + i + ";");
+			} else {
+				result.append(c);
+			}
+		}
+		return result.toString();
+	}
+
+	public static String unicodeForHtml(String s) {
+		final StringBuilder result = new StringBuilder();
+		for (char c : s.toCharArray()) {
+			if (c > 127 || c == '&' || c == '|' || c == '<' || c == '>') {
+				final int i = c;
+				result.append("&#" + i + ";");
+			} else {
+				result.append(c);
+			}
+		}
+		return result.toString();
+	}
+
 	public static String manageArrowForSequence(String s) {
 		s = s.replace('=', '-');
 		return s;
+	}
+
+	public static String capitalize(String s) {
+		return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
 	}
 
 	public static String manageArrowForCuca(String s) {
@@ -207,32 +247,6 @@ public class StringUtils {
 		return s;
 	}
 
-	// private static String cleanLineFromSource(String s) {
-	// if (s.startsWith("\uFEFF")) {
-	// s = s.substring(1);
-	// }
-	// if (s.startsWith("~~")) {
-	// s = s.substring("~~".length());
-	// }
-	// // if (s.startsWith(" * ")) {
-	// // s = s.substring(" * ".length());
-	// // }
-	// s = s.replaceFirst("^\\s+\\* ", "");
-	// if (s.equals(" *")) {
-	// s = "";
-	// }
-	// s = s.trim();
-	// while (s.startsWith(" ") || s.startsWith("/") || s.startsWith("\t") ||
-	// s.startsWith("%") || s.startsWith("/*")) {
-	// if (s.startsWith("/*")) {
-	// s = s.substring(2).trim();
-	// } else {
-	// s = s.substring(1).trim();
-	// }
-	// }
-	// return s;
-	// }
-
 	public static boolean isCJK(char c) {
 		final Character.UnicodeBlock block = Character.UnicodeBlock.of(c);
 		System.err.println(block);
@@ -320,6 +334,97 @@ public class StringUtils {
 				}
 			}
 		}
+	}
+
+	public static String uncommentSource(String source) {
+		final StringReader sr = new StringReader(source);
+		final UncommentReadLine un = new UncommentReadLine(new ReadLineReader(sr));
+		final StringBuilder sb = new StringBuilder();
+		String s = null;
+		try {
+			while ((s = un.readLine()) != null) {
+				sb.append(s);
+				sb.append('\n');
+			}
+		} catch (IOException e) {
+			Log.error("Error " + e);
+			throw new IllegalStateException(e.toString());
+		}
+
+		sr.close();
+		return sb.toString();
+	}
+
+	public static boolean isDiagramCacheable(String uml) {
+		uml = uml.toLowerCase();
+		if (uml.startsWith("@startuml\nversion\n")) {
+			return false;
+		}
+		if (uml.startsWith("@startuml\ncheckversion")) {
+			return false;
+		}
+		if (uml.startsWith("@startuml\ntestdot\n")) {
+			return false;
+		}
+		if (uml.startsWith("@startuml\nsudoku\n")) {
+			return false;
+		}
+		return true;
+	}
+
+	public static List<String> splitComma(String s) {
+		s = s.trim();
+		if (s.matches("([\\p{L}0-9_.]+|\"[^\"]+\")(\\s*,\\s*([\\p{L}0-9_.]+|\"[^\"]+\"))*") == false) {
+			throw new IllegalArgumentException();
+		}
+		final List<String> result = new ArrayList<String>();
+		final Pattern p = Pattern.compile("([\\p{L}0-9_.]+|\"[^\"]+\")");
+		final Matcher m = p.matcher(s);
+		while (m.find()) {
+			result.add(eventuallyRemoveStartingAndEndingDoubleQuote(m.group(0)));
+		}
+		return Collections.unmodifiableList(result);
+	}
+
+	public static String getAsHtml(Color color) {
+		if (color == null) {
+			throw new IllegalArgumentException();
+		}
+		return getAsHtml(color.getRGB());
+	}
+
+	public static String getAsHtml(int color) {
+		final int v = 0xFFFFFF & color;
+		String s = "000000" + Integer.toHexString(v).toUpperCase();
+		s = s.substring(s.length() - 6);
+		return "#" + s;
+	}
+
+	public static String getUid(String uid1, int uid2) {
+		return uid1 + String.format("%04d", uid2);
+	}
+
+	public static List<CharSequence> manageEmbededDiagrams(final List<String> strings) {
+		final List<CharSequence> result = new ArrayList<CharSequence>();
+		final Iterator<String> it = strings.iterator();
+		while (it.hasNext()) {
+			CharSequence s = it.next();
+			if (s.equals("{{")) {
+				final List<String> other = new ArrayList<String>();
+				other.add("@startuml");
+				while (it.hasNext()) {
+					String s2 = it.next();
+					if (s2.equals("}}")) {
+						break;
+					}
+					other.add(s2);
+				}
+				other.add("@enduml");
+				s = new EmbededDiagram(other);
+			}
+			result.add(s);
+		}
+		return result;
 	}
 
 }

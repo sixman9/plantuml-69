@@ -33,6 +33,8 @@
  */
 package net.sourceforge.plantuml.cucadiagram;
 
+import net.sourceforge.plantuml.ugraphic.UStroke;
+
 public class LinkType {
 
 	private final LinkDecor decor1;
@@ -73,8 +75,24 @@ public class LinkType {
 		return style == LinkStyle.DASHED;
 	}
 
+	public boolean isDotted() {
+		return style == LinkStyle.DOTTED;
+	}
+
+	public boolean isBold() {
+		return style == LinkStyle.BOLD;
+	}
+
 	public LinkType getDashed() {
 		return new LinkType(decor1, LinkStyle.DASHED, decor2);
+	}
+
+	public LinkType getDotted() {
+		return new LinkType(decor1, LinkStyle.DOTTED, decor2);
+	}
+
+	public LinkType getBold() {
+		return new LinkType(decor1, LinkStyle.BOLD, decor2);
 	}
 
 	public LinkType getInterfaceProvider() {
@@ -114,6 +132,47 @@ public class LinkType {
 		if (style == LinkStyle.DASHED) {
 			sb.append(",style=dashed");
 		}
+		if (style == LinkStyle.DOTTED) {
+			sb.append(",style=dotted,");
+		}
+		if (style == LinkStyle.BOLD) {
+			sb.append(",style=bold,");
+		}
+
+		return sb.toString();
+	}
+
+	public String getSpecificDecorationSvek() {
+		final StringBuilder sb = new StringBuilder();
+
+		if (decor1 == LinkDecor.NONE && decor2 != LinkDecor.NONE) {
+			sb.append("dir=back,");
+		}
+		if (decor1 != LinkDecor.NONE && decor2 != LinkDecor.NONE) {
+			sb.append("dir=both,");
+		}
+
+		sb.append("arrowtail=");
+		sb.append(decor2.getArrowDotSvek());
+		sb.append(",arrowhead=");
+		sb.append(decor1.getArrowDotSvek());
+
+		if (decor1 == LinkDecor.EXTENDS || decor2 == LinkDecor.EXTENDS) {
+			sb.append(",arrowsize=2");
+		}
+		if (decor1 == LinkDecor.PLUS || decor2 == LinkDecor.PLUS) {
+			sb.append(",arrowsize=1.5");
+		}
+
+		// if (style == LinkStyle.DASHED) {
+		// sb.append(",style=dashed");
+		// }
+		// if (style == LinkStyle.DOTTED) {
+		// sb.append(",style=dotted,");
+		// }
+		// if (style == LinkStyle.BOLD) {
+		// sb.append(",style=bold,");
+		// }
 
 		return sb.toString();
 	}
@@ -153,6 +212,19 @@ public class LinkType {
 
 	public LinkType getPart2() {
 		return new LinkType(LinkDecor.NONE, style, decor2);
+	}
+
+	public UStroke getStroke() {
+		if (style == LinkStyle.DASHED) {
+			return new UStroke(7, 7, 1);
+		}
+		if (style == LinkStyle.DOTTED) {
+			return new UStroke(1, 3, 1);
+		}
+		if (style == LinkStyle.BOLD) {
+			return new UStroke(2);
+		}
+		return new UStroke();
 	}
 
 }

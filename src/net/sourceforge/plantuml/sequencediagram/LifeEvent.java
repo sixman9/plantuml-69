@@ -28,11 +28,12 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 4243 $
+ * Revision $Revision: 6483 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram;
 
+import net.sourceforge.plantuml.Url;
 import net.sourceforge.plantuml.graphic.HtmlColor;
 
 public class LifeEvent implements Event {
@@ -54,10 +55,17 @@ public class LifeEvent implements Event {
 	public LifeEventType getType() {
 		return type;
 	}
-	
+
 	public HtmlColor getSpecificBackColor() {
 		return backcolor;
 	}
 
+	public boolean dealWith(Participant someone) {
+		return this.p == someone;
+	}
+
+	public Url getUrl() {
+		return null;
+	}
 
 }

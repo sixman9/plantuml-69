@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 3914 $
+ * Revision $Revision: 7294 $
  *
  */
 package net.sourceforge.plantuml.ugraphic.g2d;
@@ -40,15 +40,22 @@ import java.awt.Shape;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
 import net.sourceforge.plantuml.ugraphic.UDriver;
 import net.sourceforge.plantuml.ugraphic.UGradient;
 import net.sourceforge.plantuml.ugraphic.UParam;
 import net.sourceforge.plantuml.ugraphic.URectangle;
 import net.sourceforge.plantuml.ugraphic.UShape;
 
-public class DriverRectangleG2d implements UDriver<Graphics2D> {
+public class DriverRectangleG2d extends DriverShadowedG2d implements UDriver<Graphics2D> {
 
-	public void draw(UShape ushape, double x, double y, UParam param, Graphics2D g2d) {
+	private final double dpiFactor;
+
+	public DriverRectangleG2d(double dpiFactor) {
+		this.dpiFactor = dpiFactor;
+	}
+
+	public void draw(UShape ushape, double x, double y, ColorMapper mapper, UParam param, Graphics2D g2d) {
 		g2d.setStroke(new BasicStroke((float) param.getStroke().getThickness()));
 		final URectangle shape = (URectangle) ushape;
 		final double rx = shape.getRx();
@@ -59,19 +66,28 @@ public class DriverRectangleG2d implements UDriver<Graphics2D> {
 		} else {
 			rect = new RoundRectangle2D.Double(x, y, shape.getWidth(), shape.getHeight(), rx, ry);
 		}
+
+		// Shadow
+		if (shape.getDeltaShadow() != 0) {
+			drawShadow(g2d, rect, shape.getDeltaShadow(), dpiFactor);
+		}
+
 		final UGradient gr = param.getGradient();
 		if (gr == null) {
 			if (param.getBackcolor() != null) {
-				g2d.setColor(param.getBackcolor());
+				g2d.setColor(mapper.getMappedColor(param.getBackcolor()));
+				DriverLineG2d.manageStroke(param, g2d);
 				g2d.fill(rect);
 			}
 			if (param.getColor() != null) {
-				g2d.setColor(param.getColor());
+				g2d.setColor(mapper.getMappedColor(param.getColor()));
+				DriverLineG2d.manageStroke(param, g2d);
 				g2d.draw(rect);
 			}
 		} else {
-			final GradientPaint paint = new GradientPaint((float) x, (float) y, gr.getColor1(), (float) (x + shape
-					.getWidth()), (float) (y + shape.getHeight()), gr.getColor2());
+			final GradientPaint paint = new GradientPaint((float) x, (float) y, mapper.getMappedColor(gr.getColor1()),
+					(float) (x + shape.getWidth()), (float) (y + shape.getHeight()), mapper.getMappedColor(gr
+							.getColor2()));
 			g2d.setPaint(paint);
 			g2d.fill(rect);
 		}

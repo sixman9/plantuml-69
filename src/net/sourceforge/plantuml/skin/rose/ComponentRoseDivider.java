@@ -33,15 +33,16 @@
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.geom.Dimension2D;
 import java.util.List;
 
 import net.sourceforge.plantuml.graphic.HorizontalAlignement;
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.graphic.TextBlock;
 import net.sourceforge.plantuml.skin.AbstractTextualComponent;
+import net.sourceforge.plantuml.skin.Area;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.URectangle;
@@ -50,16 +51,17 @@ import net.sourceforge.plantuml.ugraphic.UStroke;
 public class ComponentRoseDivider extends AbstractTextualComponent {
 
 	// private final int outMargin = 5;
-	private final Color background;
+	private final HtmlColor background;
 
-	public ComponentRoseDivider(Color fontColor, Font font, Color background,
+	public ComponentRoseDivider(HtmlColor fontColor, UFont font, HtmlColor background,
 			List<? extends CharSequence> stringsToDisplay) {
 		super(stringsToDisplay, fontColor, font, HorizontalAlignement.CENTER, 4, 4, 4);
 		this.background = background;
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		final TextBlock textBlock = getTextBlock();
 		final StringBounder stringBounder = ug.getStringBounder();
 		final double textWidth = getTextWidth(stringBounder);
@@ -69,11 +71,11 @@ public class ComponentRoseDivider extends AbstractTextualComponent {
 		final double xpos = (dimensionToUse.getWidth() - textWidth - deltaX) / 2;
 		final double ypos = (dimensionToUse.getHeight() - textHeight) / 2;
 
-		ug.getParam().setColor(Color.BLACK);
+		ug.getParam().setColor(HtmlColor.BLACK);
 		ug.draw(0, dimensionToUse.getHeight() / 2 - 1, new ULine(dimensionToUse.getWidth(), 0));
 		ug.draw(0, dimensionToUse.getHeight() / 2 + 2, new ULine(dimensionToUse.getWidth(), 0));
 
-		ug.getParam().setColor(Color.BLACK);
+		ug.getParam().setColor(HtmlColor.BLACK);
 		ug.getParam().setBackcolor(background);
 
 		ug.getParam().setStroke(new UStroke(2));

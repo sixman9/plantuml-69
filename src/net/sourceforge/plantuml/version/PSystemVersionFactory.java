@@ -32,7 +32,10 @@
 package net.sourceforge.plantuml.version;
 
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import net.sourceforge.plantuml.DiagramType;
 import net.sourceforge.plantuml.Log;
 import net.sourceforge.plantuml.PSystemBasicFactory;
 
@@ -40,11 +43,7 @@ public class PSystemVersionFactory implements PSystemBasicFactory {
 
 	private PSystemVersion system;
 
-	public PSystemVersionFactory() {
-		reset();
-	}
-
-	public void reset() {
+	public void init(String startLine) {
 	}
 
 	public boolean executeLine(String line) {
@@ -61,6 +60,26 @@ public class PSystemVersionFactory implements PSystemBasicFactory {
 				system = PSystemVersion.createTestDot();
 				return true;
 			}
+			if (line.matches("(?i)^checkversion\\s*$")) {
+				system = PSystemVersion.createCheckVersions(null, null);
+				return true;
+			}
+			final Pattern p1 = Pattern.compile("(?i)^checkversion\\(proxy=([\\w.]+),port=(\\d+)\\)$");
+			final Matcher m1 = p1.matcher(line);
+			if (m1.matches()) {
+				final String host = m1.group(1);
+				final String port = m1.group(2);
+				system = PSystemVersion.createCheckVersions(host, port);
+				return true;
+			}
+			final Pattern p2 = Pattern.compile("(?i)^checkversion\\(proxy=([\\w.]+)\\)$");
+			final Matcher m2 = p2.matcher(line);
+			if (m2.matches()) {
+				final String host = m2.group(1);
+				final String port = "80";
+				system = PSystemVersion.createCheckVersions(host, port);
+				return true;
+			}
 		} catch (IOException e) {
 			Log.error("Error " + e);
 
@@ -71,5 +90,10 @@ public class PSystemVersionFactory implements PSystemBasicFactory {
 	public PSystemVersion getSystem() {
 		return system;
 	}
+	
+	public DiagramType getDiagramType() {
+		return DiagramType.UML;
+	}
+
 
 }

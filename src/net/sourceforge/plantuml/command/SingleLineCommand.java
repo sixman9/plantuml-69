@@ -28,14 +28,12 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5041 $
+ * Revision $Revision: 6280 $
  *
  */
 package net.sourceforge.plantuml.command;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,8 +41,6 @@ import net.sourceforge.plantuml.PSystem;
 import net.sourceforge.plantuml.StringUtils;
 
 public abstract class SingleLineCommand<S extends PSystem> implements Command {
-
-	private static final Set<String> printed = new HashSet<String>();
 
 	private final S system;
 	private final Pattern pattern;
@@ -60,12 +56,12 @@ public abstract class SingleLineCommand<S extends PSystem> implements Command {
 			throw new IllegalArgumentException("Bad pattern " + pattern);
 		}
 
-		if (printed.add(pattern) == true) {
-			// System.out.println(pattern);
-		}
-
 		this.system = system;
 		this.pattern = Pattern.compile(pattern);
+	}
+	
+	public String[] getDescription() {
+		return new String[]{pattern.pattern()};
 	}
 
 	final protected S getSystem() {

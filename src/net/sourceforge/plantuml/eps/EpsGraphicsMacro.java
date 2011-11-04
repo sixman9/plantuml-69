@@ -44,15 +44,15 @@ public class EpsGraphicsMacro extends EpsGraphics {
 
 	public EpsGraphicsMacro() {
 		super();
-		rquadto.add(new PostScriptCommandRaw("3 index 3 index 4 2 roll rcurveto"));
+		rquadto.add(new PostScriptCommandRaw("3 index 3 index 4 2 roll rcurveto", true));
 	}
 
 	@Override
-	protected void append(String s) {
-		if (s.indexOf("  ") != -1) {
+	protected void append(String s, boolean checkConsistence) {
+		if (checkConsistence && s.indexOf("  ") != -1) {
 			throw new IllegalArgumentException(s);
 		}
-		data.add(new PostScriptCommandRaw(s));
+		data.add(new PostScriptCommandRaw(s, checkConsistence));
 	}
 
 	@Override
@@ -74,24 +74,24 @@ public class EpsGraphicsMacro extends EpsGraphics {
 
 	@Override
 	public void newpath() {
-		append("0 setlinewidth");
-		append("[] 0 setdash");
+		append("0 setlinewidth", true);
+		append("[] 0 setdash", true);
 		appendColor(getColor());
-		append("newpath");
+		append("newpath", true);
 	}
 
 	@Override
 	public void closepath() {
-		macroInProgress.add(new PostScriptCommandRaw("closepath"));
+		macroInProgress.add(new PostScriptCommandRaw("closepath", true));
 		closeMacro();
 	}
 
 	@Override
 	public void fill(int windingRule) {
 		if (windingRule == PathIterator.WIND_EVEN_ODD) {
-			append("eofill");
+			append("eofill", true);
 		} else if (windingRule == PathIterator.WIND_NON_ZERO) {
-			append("fill");
+			append("fill", true);
 		}
 	}
 
@@ -155,12 +155,52 @@ public class EpsGraphicsMacro extends EpsGraphics {
 		final String existingName = macros.get(macroInProgress);
 		if (existingName == null) {
 			macros.put(macroInProgress, macroInProgress.getName());
-			append(macroName());
+			append(macroName(), true);
 			macroCpt++;
 		} else {
-			append(existingName);
+			append(existingName, true);
 		}
 		macroInProgress = null;
+	}
+
+	@Override
+	protected void epsHLine(double x, double ymin, double ymax) {
+		append(format(x) + " " + format(ymin) + " moveto", true);
+		int nb = (int) ((ymax - ymin) / (getDashVisible() + getDashSpace()));
+		final double lastY = ymin + nb * (getDashVisible() + getDashSpace());
+		double v = ymax - lastY;
+		if (v > getDashVisible()) {
+			v = getDashVisible();
+			nb++;
+			v = 0;
+		}
+		append(nb + "{", true);
+		append("0 " + format(getDashVisible()) + " rlineto", true);
+		append("0 " + format(getDashSpace()) + " rmoveto", true);
+		append("} repeat", true);
+		if (v > 0) {
+			append("0 " + format(v) + " rlineto", true);
+		}
+	}
+
+	@Override
+	protected void epsVLine(double y, double xmin, double xmax) {
+		append(format(xmin) + " " + format(y) + " moveto", true);
+		int nb = (int) ((xmax - xmin) / (getDashVisible() + getDashSpace()));
+		final double lastX = xmin + nb * (getDashVisible() + getDashSpace());
+		double v = xmax - lastX;
+		if (v > getDashVisible()) {
+			v = getDashVisible();
+			nb++;
+			v = 0;
+		}
+		append(nb + "{", true);
+		append(format(getDashVisible()) + " 0 rlineto", true);
+		append(format(getDashSpace()) + " 0 rmoveto", true);
+		append("} repeat", true);
+		if (v > 0) {
+			append(format(v) + " 0 rlineto", true);
+		}
 	}
 
 }

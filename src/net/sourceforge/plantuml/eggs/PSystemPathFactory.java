@@ -36,17 +36,14 @@ package net.sourceforge.plantuml.eggs;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.sourceforge.plantuml.DiagramType;
 import net.sourceforge.plantuml.PSystemBasicFactory;
 
 public class PSystemPathFactory implements PSystemBasicFactory {
 
 	private PSystemPath system;
 
-	public PSystemPathFactory() {
-		reset();
-	}
-
-	public void reset() {
+	public void init(String startLine) {
 	}
 
 	final private static Pattern p = Pattern
@@ -64,5 +61,10 @@ public class PSystemPathFactory implements PSystemBasicFactory {
 	public PSystemPath getSystem() {
 		return system;
 	}
+	
+	public DiagramType getDiagramType() {
+		return DiagramType.UML;
+	}
+
 
 }

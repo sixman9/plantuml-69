@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  *
- * Revision $Revision: 5613 $
+ * Revision $Revision: 6918 $
  *
  */
 package net.sourceforge.plantuml.classdiagram;
@@ -36,11 +36,13 @@ package net.sourceforge.plantuml.classdiagram;
 import net.sourceforge.plantuml.classdiagram.command.CommandAddMethod;
 import net.sourceforge.plantuml.classdiagram.command.CommandCreateEntityClass2;
 import net.sourceforge.plantuml.classdiagram.command.CommandCreateEntityClassMultilines2;
+import net.sourceforge.plantuml.classdiagram.command.CommandDiamondAssociation;
 import net.sourceforge.plantuml.classdiagram.command.CommandEndNamespace;
 import net.sourceforge.plantuml.classdiagram.command.CommandHideShow;
+import net.sourceforge.plantuml.classdiagram.command.CommandHideShow3;
 import net.sourceforge.plantuml.classdiagram.command.CommandImport;
 import net.sourceforge.plantuml.classdiagram.command.CommandLinkClass2;
-import net.sourceforge.plantuml.classdiagram.command.CommandLinkLollipop;
+import net.sourceforge.plantuml.classdiagram.command.CommandLinkLollipop2;
 import net.sourceforge.plantuml.classdiagram.command.CommandMultilinesClassNote;
 import net.sourceforge.plantuml.classdiagram.command.CommandNamespace;
 import net.sourceforge.plantuml.classdiagram.command.CommandStereotype;
@@ -82,7 +84,7 @@ public class ClassDiagramFactory extends AbstractUmlSystemCommandFactory {
 
 		//addCommand(new CommandLinkClass(system));
 		addCommand(new CommandLinkClass2(system));
-		addCommand(new CommandLinkLollipop(system));
+		addCommand(new CommandLinkLollipop2(system));
 
 		addCommand(new CommandImport(system));
 		addCommand(new CommandNoteEntity(system));
@@ -92,7 +94,10 @@ public class ClassDiagramFactory extends AbstractUmlSystemCommandFactory {
 		addCommand(new CommandMultilinesStandaloneNote(system));
 //		addCommand(new CommandCreateEntityClassMultilines(system));
 		addCommand(new CommandCreateEntityClassMultilines2(system));
-		
+
+		addCommand(new CommandDiamondAssociation(system));
+
+		addCommand(new CommandHideShow3(system));
 		addCommand(new CommandHideShow(system));
 
 	}

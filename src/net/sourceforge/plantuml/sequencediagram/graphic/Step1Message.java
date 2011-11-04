@@ -28,30 +28,31 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 6026 $
+ * Revision $Revision: 7463 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram.graphic;
 
-import java.util.Collection;
+import java.util.Arrays;
 
 import net.sourceforge.plantuml.ISkinParam;
 import net.sourceforge.plantuml.SkinParamBackcolored;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.sequencediagram.InGroupable;
-import net.sourceforge.plantuml.sequencediagram.InGroupableList;
 import net.sourceforge.plantuml.sequencediagram.LifeEvent;
 import net.sourceforge.plantuml.sequencediagram.Message;
 import net.sourceforge.plantuml.sequencediagram.NotePosition;
 import net.sourceforge.plantuml.skin.ArrowDirection;
+import net.sourceforge.plantuml.skin.ArrowHead;
 import net.sourceforge.plantuml.skin.ComponentType;
 
 class Step1Message extends Step1Abstract {
 
 	private final MessageArrow messageArrow;
 
-	Step1Message(StringBounder stringBounder, Message message, DrawableSet drawingSet, double freeY) {
-		super(stringBounder, message, drawingSet, freeY);
+	Step1Message(ParticipantRange range, StringBounder stringBounder, Message message, DrawableSet drawingSet,
+			Frontier freeY) {
+		super(range, stringBounder, message, drawingSet, freeY);
 
 		final double x1 = getParticipantBox1().getCenterX(stringBounder);
 		final double x2 = getParticipantBox2().getCenterX(stringBounder);
@@ -61,21 +62,20 @@ class Step1Message extends Step1Abstract {
 		if (isSelfMessage()) {
 			this.messageArrow = null;
 		} else {
-			this.messageArrow = new MessageArrow(freeY, drawingSet.getSkin(), drawingSet.getSkin().createComponent(
-					getType(), drawingSet.getSkinParam(), getLabelOfMessage(message)), getLivingParticipantBox1(),
-					getLivingParticipantBox2());
+			this.messageArrow = new MessageArrow(freeY.getFreeY(range), drawingSet.getSkin(), drawingSet.getSkin()
+					.createComponent(getType(), drawingSet.getSkinParam(), getLabelOfMessage(message)),
+					getLivingParticipantBox1(), getLivingParticipantBox2());
 		}
 
 		if (message.getNote() != null) {
-			final ISkinParam skinParam = new SkinParamBackcolored(drawingSet.getSkinParam(), message
-					.getSpecificBackColor());
-			setNote(drawingSet.getSkin().createComponent(ComponentType.NOTE, drawingSet.getSkinParam(),
-					message.getNote()));
+			final ISkinParam skinParam = new SkinParamBackcolored(drawingSet.getSkinParam(),
+					message.getSpecificBackColor());
+			setNote(drawingSet.getSkin().createComponent(ComponentType.NOTE, skinParam, message.getNote()));
 		}
 
 	}
 
-	double prepareMessage(ConstraintSet constraintSet, Collection<InGroupableList> groupingStructures) {
+	Frontier prepareMessage(ConstraintSet constraintSet, InGroupablesStack inGroupablesStack) {
 		final Arrow graphic = createArrow();
 		final double arrowYStartLevel = graphic.getArrowYStartLevel(getStringBounder());
 		final double arrowYEndLevel = graphic.getArrowYEndLevel(getStringBounder());
@@ -90,8 +90,8 @@ class Step1Message extends Step1Abstract {
 		final double length;
 		if (isSelfMessage()) {
 			length = graphic.getArrowOnlyWidth(getStringBounder())
-					+ getLivingParticipantBox1().getLiveThicknessAt(getStringBounder(), arrowYStartLevel)
-							.getSegment().getLength();
+					+ getLivingParticipantBox1().getLiveThicknessAt(getStringBounder(), arrowYStartLevel).getSegment()
+							.getLength();
 		} else {
 			length = graphic.getArrowOnlyWidth(getStringBounder())
 					+ getLivingParticipantBox(NotePosition.LEFT).getLifeLine().getRightShift(arrowYStartLevel)
@@ -116,13 +116,12 @@ class Step1Message extends Step1Abstract {
 			afterMessage(getStringBounder(), lifeEvent, arrowYEndLevel + marginActivateAndDeactive - delta1);
 		}
 
-		if (groupingStructures != null && graphic instanceof InGroupable) {
-			for (InGroupableList groupingStructure : groupingStructures) {
-				groupingStructure.addInGroupable((InGroupable) graphic);
-				groupingStructure.addInGroupable(getLivingParticipantBox1());
-				if (isSelfMessage() == false) {
-					groupingStructure.addInGroupable(getLivingParticipantBox2());
-				}
+		assert graphic instanceof InGroupable;
+		if (graphic instanceof InGroupable) {
+			inGroupablesStack.addElement((InGroupable) graphic);
+			inGroupablesStack.addElement(getLivingParticipantBox1());
+			if (isSelfMessage() == false) {
+				inGroupablesStack.addElement(getLivingParticipantBox2());
 			}
 		}
 
@@ -160,37 +159,59 @@ class Step1Message extends Step1Abstract {
 		if (getMessage().isCreate()) {
 			return createArrowCreate();
 		}
-		final MessageSelfArrow messageSelfArrow = new MessageSelfArrow(getFreeY(), getDrawingSet().getSkin(),
-				getDrawingSet().getSkin().createComponent(getType(), getDrawingSet().getSkinParam(),
-						getLabelOfMessage(getMessage())), getLivingParticipantBox1());
 		if (getMessage().getNote() != null && isSelfMessage()) {
+			final MessageSelfArrow messageSelfArrow = createMessageSelfArrow();
 			final NoteBox noteBox = createNoteBox(getStringBounder(), messageSelfArrow, getNote(), getMessage()
-					.getNotePosition());
+					.getNotePosition(), getMessage().getUrlNote());
 			return new ArrowAndNoteBox(getStringBounder(), messageSelfArrow, noteBox);
 		} else if (getMessage().getNote() != null) {
 			final NoteBox noteBox = createNoteBox(getStringBounder(), messageArrow, getNote(), getMessage()
-					.getNotePosition());
+					.getNotePosition(), getMessage().getUrlNote());
 			return new ArrowAndNoteBox(getStringBounder(), messageArrow, noteBox);
 		} else if (isSelfMessage()) {
-			return messageSelfArrow;
+			return createMessageSelfArrow();
 		} else {
 			return messageArrow;
 		}
 	}
 
+	private MessageSelfArrow createMessageSelfArrow() {
+		final double posY = getFreeY().getFreeY(getParticipantRange());
+		double deltaY = 0;
+		if (getMessage().isActivate()) {
+			deltaY -= getHalfLifeWidth();
+		}
+		if (getMessage().isDeactivate()) {
+			deltaY += getHalfLifeWidth();
+		}
+
+		return new MessageSelfArrow(posY, getDrawingSet().getSkin(), getDrawingSet().getSkin().createComponent(
+				getType(), getDrawingSet().getSkinParam(), getLabelOfMessage(getMessage())),
+				getLivingParticipantBox1(), deltaY);
+	}
+
+	private double getHalfLifeWidth() {
+		return getDrawingSet().getSkin()
+				.createComponent(ComponentType.ALIVE_BOX_OPEN_OPEN, getDrawingSet().getSkinParam(), Arrays.asList(""))
+				.getPreferredWidth(null) / 2;
+	}
+
 	private Arrow createArrowCreate() {
-		getLivingParticipantBox2().create(getFreeY());
+		if (messageArrow == null) {
+			throw new IllegalStateException();
+		}
+		Arrow result = new ArrowAndParticipant(getStringBounder(), messageArrow, getParticipantBox2());
 		if (getMessage().getNote() != null) {
-			final ArrowAndParticipant arrowAndParticipant = new ArrowAndParticipant(getStringBounder(), messageArrow,
-					getParticipantBox2());
-			final NoteBox noteBox = createNoteBox(getStringBounder(), arrowAndParticipant, getNote(), getMessage()
-					.getNotePosition());
+			final NoteBox noteBox = createNoteBox(getStringBounder(), result, getNote(),
+					getMessage().getNotePosition(), getMessage().getUrlNote());
 			if (getMessage().getNotePosition() == NotePosition.RIGHT) {
 				noteBox.pushToRight(getParticipantBox2().getPreferredWidth(getStringBounder()) / 2);
 			}
-			return new ArrowAndNoteBox(getStringBounder(), arrowAndParticipant, noteBox);
+			result = new ArrowAndNoteBox(getStringBounder(), result, noteBox);
 		}
-		return new ArrowAndParticipant(getStringBounder(), messageArrow, getParticipantBox2());
+		getLivingParticipantBox2().create(
+				getFreeY().getFreeY(getParticipantRange()) + result.getPreferredHeight(getStringBounder()) / 2);
+		return result;
 	}
 
 	private ComponentType getSelfArrowType(Message m) {
@@ -199,8 +220,8 @@ class Step1Message extends Step1Abstract {
 		if (m.getArrowConfiguration().isDotted()) {
 			result = result.withDotted();
 		}
-		if (m.getArrowConfiguration().isASync()) {
-			result = result.withAsync();
+		if (m.getArrowConfiguration().getHead() == ArrowHead.ASYNC) {
+			result = result.withHead(ArrowHead.ASYNC);
 		}
 		result = result.withPart(m.getArrowConfiguration().getPart());
 		return result;
@@ -216,8 +237,11 @@ class Step1Message extends Step1Abstract {
 		if (m.getArrowConfiguration().isDotted()) {
 			result = result.withDotted();
 		}
-		if (m.getArrowConfiguration().isASync()) {
-			result = result.withAsync();
+		if (m.getArrowConfiguration().getHead() == ArrowHead.ASYNC) {
+			result = result.withHead(ArrowHead.ASYNC);
+		}
+		if (m.getArrowConfiguration().isCrossX()) {
+			result = result.withCrossX();
 		}
 		result = result.withPart(m.getArrowConfiguration().getPart());
 		return result;

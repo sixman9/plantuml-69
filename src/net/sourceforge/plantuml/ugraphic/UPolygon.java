@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5392 $
+ * Revision $Revision: 7226 $
  *
  */
 package net.sourceforge.plantuml.ugraphic;
@@ -38,9 +38,16 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UPolygon implements UShape {
+public class UPolygon extends AbstractShadowable {
 
 	private final List<Point2D.Double> all = new ArrayList<Point2D.Double>();
+
+	public UPolygon() {
+	}
+
+	public UPolygon(List<Point2D.Double> points) {
+		all.addAll(points);
+	}
 
 	public void addPoint(double x, double y) {
 		all.add(new Point2D.Double(x, y));
@@ -50,10 +57,23 @@ public class UPolygon implements UShape {
 		return all;
 	}
 
+	public UPolygon translate(double dx, double dy) {
+		final UPolygon result = new UPolygon();
+		for (Point2D.Double pt : all) {
+			result.addPoint(pt.x + dx, pt.y + dy);
+		}
+		return result;
+	}
+
 	public void rotate(double theta) {
 		final AffineTransform rotate = AffineTransform.getRotateInstance(theta);
 		for (Point2D.Double pt : all) {
 			rotate.transform(pt, pt);
 		}
+	}
+
+	@Override
+	public String toString() {
+		return super.toString() + " " + all;
 	}
 }

@@ -37,6 +37,7 @@ import java.awt.geom.Dimension2D;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,10 +48,10 @@ import java.util.Map;
 
 import net.sourceforge.plantuml.FileFormat;
 import net.sourceforge.plantuml.StringUtils;
-import net.sourceforge.plantuml.cucadiagram.Member;
 import net.sourceforge.plantuml.cucadiagram.CucaDiagram;
 import net.sourceforge.plantuml.cucadiagram.Entity;
 import net.sourceforge.plantuml.cucadiagram.Link;
+import net.sourceforge.plantuml.cucadiagram.Member;
 import net.sourceforge.plantuml.posimo.Block;
 import net.sourceforge.plantuml.posimo.Cluster;
 import net.sourceforge.plantuml.posimo.GraphvizSolverB;
@@ -121,18 +122,18 @@ public final class CucaDiagramTxtMaker {
 		final int w = getWidth(ent);
 		final int h = getHeight(ent);
 		ug.getCharArea().drawBoxSimple(0, 0, w, h);
-		ug.getCharArea().drawStringsLR(StringUtils.getWithNewlines(ent.getDisplay()), 1, 1);
+		ug.getCharArea().drawStringsLR(ent.getDisplay2(), 1, 1);
 		int y = 2;
 		ug.getCharArea().drawHLine('-', y, 1, w - 1);
 		y++;
-		for (Member att : ent.fields2()) {
+		for (Member att : ent.getFieldsToDisplay()) {
 			final List<String> disp = StringUtils.getWithNewlines(att.getDisplayWithVisibilityChar());
 			ug.getCharArea().drawStringsLR(disp, 1, y);
 			y += StringUtils.getHeight(disp);
 		}
 		ug.getCharArea().drawHLine('-', y, 1, w - 1);
 		y++;
-		for (Member att : ent.methods2()) {
+		for (Member att : ent.getMethodsToDisplay()) {
 			final List<String> disp = StringUtils.getWithNewlines(att.getDisplayWithVisibilityChar());
 			ug.getCharArea().drawStringsLR(disp, 1, y);
 			y += StringUtils.getHeight(disp);
@@ -149,31 +150,35 @@ public final class CucaDiagramTxtMaker {
 	}
 
 	private int getHeight(Entity entity) {
-		int result = StringUtils.getHeight(StringUtils.getWithNewlines(entity.getDisplay()));
-		for (Member att : entity.methods2()) {
+		int result = StringUtils.getHeight(entity.getDisplay2());
+		for (Member att : entity.getMethodsToDisplay()) {
 			result += StringUtils.getHeight(StringUtils.getWithNewlines(att.getDisplayWithVisibilityChar()));
 		}
-		for (Member att : entity.fields2()) {
+		for (Member att : entity.getFieldsToDisplay()) {
 			result += StringUtils.getHeight(StringUtils.getWithNewlines(att.getDisplayWithVisibilityChar()));
 		}
 		return result + 4;
 	}
 
 	private int getWidth(Entity entity) {
-		int result = StringUtils.getWidth(StringUtils.getWithNewlines(entity.getDisplay()));
-		for (Member att : entity.methods2()) {
+		int result = StringUtils.getWidth(entity.getDisplay2());
+		for (Member att : entity.getMethodsToDisplay()) {
 			final int w = StringUtils.getWidth(StringUtils.getWithNewlines(att.getDisplayWithVisibilityChar()));
 			if (w > result) {
 				result = w;
 			}
 		}
-		for (Member att : entity.fields2()) {
+		for (Member att : entity.getFieldsToDisplay()) {
 			final int w = StringUtils.getWidth(StringUtils.getWithNewlines(att.getDisplayWithVisibilityChar()));
 			if (w > result) {
 				result = w;
 			}
 		}
 		return result + 2;
+	}
+
+	public void createFiles(OutputStream os, int index) {
+		ug.getCharArea().print(new PrintStream(os));
 	}
 
 }

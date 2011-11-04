@@ -33,8 +33,6 @@
  */
 package net.sourceforge.plantuml.graph;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.geom.Dimension2D;
 import java.util.ArrayList;
@@ -44,36 +42,43 @@ import java.util.List;
 import net.sourceforge.plantuml.Dimension2DDouble;
 import net.sourceforge.plantuml.FontParam;
 import net.sourceforge.plantuml.ISkinParam;
+import net.sourceforge.plantuml.StringUtils;
 import net.sourceforge.plantuml.cucadiagram.Member;
 import net.sourceforge.plantuml.graphic.FontConfiguration;
 import net.sourceforge.plantuml.graphic.HorizontalAlignement;
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.graphic.TextBlock;
 import net.sourceforge.plantuml.graphic.TextBlockUtils;
 import net.sourceforge.plantuml.skin.VisibilityModifier;
 import net.sourceforge.plantuml.skin.rose.Rose;
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
 import net.sourceforge.plantuml.ugraphic.PlacementStrategyVisibility;
 import net.sourceforge.plantuml.ugraphic.PlacementStrategyY1Y2Left;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.UGroup;
 
-public class MethodsOrFieldsArea2 {
+public class MethodsOrFieldsArea2 implements TextBlock {
 
-	private final Font font;
+	private final UFont font;
 	private final List<Member> members = new ArrayList<Member>();
 	private final ISkinParam skinParam;
-	private final Color color;
+	private final HtmlColor color;
 	private final Rose rose = new Rose();
 
 	public MethodsOrFieldsArea2(List<Member> attributes, FontParam fontParam, ISkinParam skinParam) {
 		this.members.addAll(attributes);
 		this.skinParam = skinParam;
 		this.font = skinParam.getFont(fontParam, null);
-		this.color = rose.getFontColor(skinParam, FontParam.CLASS_ATTRIBUTE);
+		this.color = rose.getFontColor(skinParam, fontParam);
 
 	}
 
 	private boolean hasSmallIcon() {
+		if (skinParam.classAttributeIconSize() == 0) {
+			return false;
+		}
 		for (Member m : members) {
 			if (m.getVisibilityModifier() != null) {
 				return true;
@@ -86,34 +91,34 @@ public class MethodsOrFieldsArea2 {
 		double x = 0;
 		double y = 0;
 		for (Member m : members) {
-			final String s = m.getDisplayWithoutVisibilityChar();
+			final String s = getDisplay(m);
 			final TextBlock bloc = createTextBlock(s);
 			final Dimension2D dim = bloc.calculateDimension(stringBounder);
 			y += dim.getHeight();
 			x = Math.max(dim.getWidth(), x);
 		}
 		if (hasSmallIcon()) {
-			x += skinParam.getCircledCharacterRadius();
+			x += skinParam.getCircledCharacterRadius() + 3;
 		}
 		return new Dimension2DDouble(x, y);
 	}
 
 	private TextBlock createTextBlock(String s) {
-		return TextBlockUtils.create(Arrays.asList(s), new FontConfiguration(font, color), HorizontalAlignement.LEFT);
+		return TextBlockUtils.create(StringUtils.getWithNewlines(s) , new FontConfiguration(font, color), HorizontalAlignement.LEFT);
 	}
 
-	public void drawTOBEREMOVED(Graphics2D g2d, double x, double y) {
+	public void drawTOBEREMOVED(ColorMapper colorMapper, Graphics2D g2d, double x, double y) {
 		throw new UnsupportedOperationException();
 	}
 
-	public void draw(UGraphic ug, double x, double y) {
+	public void drawU(UGraphic ug, double x, double y) {
 		final Dimension2D dim = calculateDimension(ug.getStringBounder());
 		final UGroup group;
 		if (hasSmallIcon()) {
-			group = new UGroup(new PlacementStrategyVisibility(ug.getStringBounder(),
-					skinParam.getCircledCharacterRadius()));
+			group = new UGroup(new PlacementStrategyVisibility(ug.getStringBounder(), skinParam
+					.getCircledCharacterRadius() + 3));
 			for (Member att : members) {
-				final String s = att.getDisplayWithoutVisibilityChar();
+				final String s = getDisplay(att);
 				final TextBlock bloc = createTextBlock(s);
 				final VisibilityModifier modifier = att.getVisibilityModifier();
 				group.add(getUBlock(modifier));
@@ -122,13 +127,18 @@ public class MethodsOrFieldsArea2 {
 		} else {
 			group = new UGroup(new PlacementStrategyY1Y2Left(ug.getStringBounder()));
 			for (Member att : members) {
-				final String s = att.getDisplayWithoutVisibilityChar();
+				final String s = getDisplay(att);
 				final TextBlock bloc = createTextBlock(s);
 				group.add(bloc);
 			}
 		}
 		group.drawU(ug, x, y, dim.getWidth(), dim.getHeight());
 
+	}
+
+	private String getDisplay(Member att) {
+		final boolean withVisibilityChar = skinParam.classAttributeIconSize() == 0;
+		return att.getDisplay(withVisibilityChar);
 	}
 
 	private TextBlock getUBlock(final VisibilityModifier modifier) {
@@ -138,7 +148,7 @@ public class MethodsOrFieldsArea2 {
 				public void drawU(UGraphic ug, double x, double y) {
 				}
 
-				public void drawTOBEREMOVED(Graphics2D g2d, double x, double y) {
+				public void drawTOBEREMOVED(ColorMapper colorMapper, Graphics2D g2d, double x, double y) {
 					throw new UnsupportedOperationException();
 				}
 
@@ -147,11 +157,11 @@ public class MethodsOrFieldsArea2 {
 				}
 			};
 		}
-		final Color back = modifier.getBackground() == null ? null : rose.getHtmlColor(skinParam,
-				modifier.getBackground()).getColor();
-		final Color fore = rose.getHtmlColor(skinParam, modifier.getForeground()).getColor();
+		final HtmlColor back = modifier.getBackground() == null ? null : rose.getHtmlColor(skinParam, modifier
+				.getBackground());
+		final HtmlColor fore = rose.getHtmlColor(skinParam, modifier.getForeground());
 
-		final TextBlock uBlock = modifier.getUBlock(skinParam.getCircledCharacterRadius(), fore, back);
+		final TextBlock uBlock = modifier.getUBlock(skinParam.classAttributeIconSize(), fore, back);
 		return uBlock;
 	}
 

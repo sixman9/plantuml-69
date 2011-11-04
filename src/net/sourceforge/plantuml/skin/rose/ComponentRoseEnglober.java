@@ -33,30 +33,32 @@
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.geom.Dimension2D;
 import java.util.List;
 
 import net.sourceforge.plantuml.graphic.HorizontalAlignement;
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.skin.AbstractTextualComponent;
+import net.sourceforge.plantuml.skin.Area;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.URectangle;
 
 public class ComponentRoseEnglober extends AbstractTextualComponent {
 	
-	private final Color borderColor;
-	private final Color backColor;
+	private final HtmlColor borderColor;
+	private final HtmlColor backColor;
 
-	public ComponentRoseEnglober(Color borderColor, Color backColor, List<? extends CharSequence> strings, Color fontColor, Font font) {
+	public ComponentRoseEnglober(HtmlColor borderColor, HtmlColor backColor, List<? extends CharSequence> strings, HtmlColor fontColor, UFont font) {
 		super(strings, fontColor, font, HorizontalAlignement.CENTER, 3, 3, 1);
 		this.borderColor = borderColor;
 		this.backColor = backColor;
 	}
 
 	@Override
-	protected void drawBackgroundInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawBackgroundInternalU(UGraphic ug, Area area) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		ug.getParam().setColor(borderColor);
 		ug.getParam().setBackcolor(backColor);
 		ug.draw(0, 0, new URectangle(dimensionToUse.getWidth(), dimensionToUse.getHeight()));
@@ -65,7 +67,7 @@ public class ComponentRoseEnglober extends AbstractTextualComponent {
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
 		// ug.getParam().setColor(Color.RED);
 		// ug.getParam().setBackcolor(Color.YELLOW);
 		// ug.draw(0, 0, new URectangle(dimensionToUse.getWidth(),

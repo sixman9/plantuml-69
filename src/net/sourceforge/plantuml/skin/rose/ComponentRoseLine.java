@@ -28,32 +28,34 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 6008 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
 import java.awt.geom.Dimension2D;
 
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.skin.AbstractComponent;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.UStroke;
 
 public class ComponentRoseLine extends AbstractComponent {
 
-	private final Color color;
+	private final HtmlColor color;
 	private final boolean continueLine;
 
-	public ComponentRoseLine(Color color, boolean continueLine) {
+	public ComponentRoseLine(HtmlColor color, boolean continueLine) {
 		this.color = color;
 		this.continueLine = continueLine;
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		ug.getParam().setColor(color);
 		if (continueLine) {
 			ug.getParam().setStroke(new UStroke());

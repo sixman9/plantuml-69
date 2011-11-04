@@ -37,8 +37,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import net.sourceforge.plantuml.Url;
 import net.sourceforge.plantuml.cucadiagram.dot.DrawFile;
 import net.sourceforge.plantuml.graphic.HtmlColor;
+import net.sourceforge.plantuml.svek.IEntityImage;
 
 public abstract class EntityUtils {
 
@@ -47,12 +49,12 @@ public abstract class EntityUtils {
 			throw new IllegalArgumentException();
 		}
 		return new IEntity() {
-			public List<Member> fields2() {
-				return ent.fields2();
+			public List<Member> getFieldsToDisplay() {
+				return ent.getFieldsToDisplay();
 			}
 
-			public String getDisplay() {
-				return ent.getDisplay();
+			public List<? extends CharSequence> getDisplay2() {
+				return ent.getDisplay2();
 			}
 
 			public Group getParent() {
@@ -75,12 +77,12 @@ public abstract class EntityUtils {
 				return ent.getUid();
 			}
 
-			public String getUrl() {
+			public Url getUrl() {
 				return ent.getUrl();
 			}
 
-			public List<Member> methods2() {
-				return ent.methods2();
+			public List<Member> getMethodsToDisplay() {
+				return ent.getMethodsToDisplay();
 			}
 
 			public DrawFile getImageFile() {
@@ -91,7 +93,7 @@ public abstract class EntityUtils {
 				return ent.getSpecificBackColor();
 			}
 
-			public void setSpecificBackcolor(String specificBackcolor) {
+			public void setSpecificBackcolor(HtmlColor specificBackcolor) {
 				throw new UnsupportedOperationException();
 			}
 
@@ -116,6 +118,38 @@ public abstract class EntityUtils {
 
 			public DrawFile getImageFile(File searched) throws IOException {
 				return ent.getImageFile(searched);
+			}
+
+			public boolean isTop() {
+				return ent.isTop();
+			}
+
+			public void setTop(boolean top) {
+				ent.setTop(top);
+			}
+
+			public boolean hasNearDecoration() {
+				return ent.hasNearDecoration();
+			}
+
+			public void setNearDecoration(boolean nearDecoration) {
+				ent.setNearDecoration(nearDecoration);
+			}
+
+			public int compareTo(IEntity other) {
+				return ent.compareTo(other);
+			}
+
+			public int getXposition() {
+				return ent.getXposition();
+			}
+
+			public void setXposition(int pos) {
+				ent.setXposition(pos);
+			}
+
+			public IEntityImage getSvekImage() {
+				return ent.getSvekImage();
 			}
 
 		};

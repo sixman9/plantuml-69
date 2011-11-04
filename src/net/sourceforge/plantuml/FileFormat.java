@@ -28,22 +28,39 @@
  *
  * Original Author:  Arnaud Roques
  *
- * Revision $Revision: 5877 $
+ * Revision $Revision: 7384 $
  *
  */
 package net.sourceforge.plantuml;
 
 public enum FileFormat {
-	PNG, SVG, EPS, EPS_VIA_SVG, ATXT, UTXT, XMI_STANDARD, XMI_STAR, XMI_ARGO;
+	PNG, SVG, EPS, EPS_TEXT, ATXT, UTXT, DOT, XMI_STANDARD, XMI_STAR, XMI_ARGO, PDF, MJPEG, HTML;
 
 	public String getFileSuffix() {
-		if (this == EPS_VIA_SVG) {
-			throw new UnsupportedOperationException("Not used anymore");
-			// return EPS.getFileSuffix();
-		}
 		if (name().startsWith("XMI")) {
 			return ".XMI";
 		}
+		if (this == EPS_TEXT) {
+			return EPS.getFileSuffix();
+		}
 		return "." + name().toLowerCase();
 	}
+
+	public boolean isEps() {
+		if (this == EPS) {
+			return true;
+		}
+		if (this == EPS_TEXT) {
+			return true;
+		}
+		return false;
+	}
+
+	public String changeName(String fileName, int cpt) {
+		if (cpt == 0) {
+			return fileName.replaceAll("\\.\\w+$", getFileSuffix());
+		}
+		return fileName.replaceAll("\\.\\w+$", "_" + String.format("%03d", cpt) + getFileSuffix());
+	}
+
 }

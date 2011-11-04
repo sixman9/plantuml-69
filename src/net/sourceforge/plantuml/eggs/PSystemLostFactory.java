@@ -33,17 +33,14 @@
  */
 package net.sourceforge.plantuml.eggs;
 
+import net.sourceforge.plantuml.DiagramType;
 import net.sourceforge.plantuml.PSystemBasicFactory;
 
 public class PSystemLostFactory implements PSystemBasicFactory {
 
 	private PSystemLost system;
 
-	public PSystemLostFactory() {
-		reset();
-	}
-
-	public void reset() {
+	public void init(String startLine) {
 	}
 
 	public boolean executeLine(String line) {
@@ -57,5 +54,10 @@ public class PSystemLostFactory implements PSystemBasicFactory {
 	public PSystemLost getSystem() {
 		return system;
 	}
+	
+	public DiagramType getDiagramType() {
+		return DiagramType.UML;
+	}
+
 
 }

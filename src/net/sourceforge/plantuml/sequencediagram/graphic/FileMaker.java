@@ -28,23 +28,22 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5520 $
+ * Revision $Revision: 7361 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram.graphic;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.List;
+
+import net.sourceforge.plantuml.UmlDiagramInfo;
 
 public interface FileMaker {
 
-	List<File> createMany(final File suggestedFile) throws IOException;
+	UmlDiagramInfo createOne2(OutputStream os, int index) throws IOException;
 
-	void createOne(OutputStream os, int index) throws IOException;
-	
 	public int getNbPages();
 
+	void appendCmap(StringBuilder cmap);
 
 }

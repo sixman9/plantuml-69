@@ -49,7 +49,11 @@ public class ComponentType {
 	static public final ComponentType ACTOR_TAIL = new ComponentType("ACTOR_TAIL");
 
 	//
-	static public final ComponentType ALIVE_LINE = new ComponentType("ALIVE_LINE");
+	static public final ComponentType ALIVE_BOX_CLOSE_CLOSE = new ComponentType("ALIVE_BOX_CLOSE_CLOSE");
+	static public final ComponentType ALIVE_BOX_CLOSE_OPEN = new ComponentType("ALIVE_BOX_CLOSE_OPEN");
+	static public final ComponentType ALIVE_BOX_OPEN_CLOSE = new ComponentType("ALIVE_BOX_OPEN_CLOSE");
+	static public final ComponentType ALIVE_BOX_OPEN_OPEN = new ComponentType("ALIVE_BOX_OPEN_OPEN");
+
 	static public final ComponentType DELAY_TEXT = new ComponentType("DELAY_TEXT");
 	static public final ComponentType DESTROY = new ComponentType("DESTROY");
 
@@ -65,7 +69,10 @@ public class ComponentType {
 	//
 	static public final ComponentType NEWPAGE = new ComponentType("NEWPAGE");
 	static public final ComponentType NOTE = new ComponentType("NOTE");
+	static public final ComponentType NOTE_HEXAGONAL = new ComponentType("NOTE_HEXAGONAL");
+	static public final ComponentType NOTE_BOX = new ComponentType("NOTE_BOX");
 	static public final ComponentType DIVIDER = new ComponentType("DIVIDER");
+	static public final ComponentType REFERENCE = new ComponentType("REFERENCE");
 	static public final ComponentType ENGLOBER = new ComponentType("ENGLOBER");
 
 	//
@@ -103,9 +110,14 @@ public class ComponentType {
 		return result;
 	}
 
-	public ComponentType withAsync() {
+	public ComponentType withHead(ArrowHead head) {
 		checkArrow();
-		return ComponentType.getArrow(arrowConfiguration.withAsync());
+		return ComponentType.getArrow(arrowConfiguration.withHead(head));
+	}
+
+	public ComponentType withCrossX() {
+		checkArrow();
+		return ComponentType.getArrow(arrowConfiguration.withCrossX());
 	}
 
 	public ComponentType withDotted() {
@@ -147,9 +159,9 @@ public class ComponentType {
 		all.add(ComponentType.getArrow(ArrowDirection.SELF).withDotted());
 
 		for (ComponentType type : new ArrayList<ComponentType>(all)) {
-			all.add(type.withAsync());
+			all.add(type.withHead(ArrowHead.ASYNC));
 		}
-		
+
 		final List<ComponentType> simples = new ArrayList<ComponentType>(all);
 		for (ComponentType type : simples) {
 			all.add(type.withPart(ArrowPart.TOP_PART));
@@ -157,6 +169,11 @@ public class ComponentType {
 		for (ComponentType type : simples) {
 			all.add(type.withPart(ArrowPart.BOTTOM_PART));
 		}
+
+		all.add(ComponentType.getArrow(ArrowDirection.LEFT_TO_RIGHT_NORMAL).withCrossX());
+		all.add(ComponentType.getArrow(ArrowDirection.RIGHT_TO_LEFT_REVERSE).withCrossX());
+		all.add(ComponentType.getArrow(ArrowDirection.LEFT_TO_RIGHT_NORMAL).withDotted().withCrossX());
+		all.add(ComponentType.getArrow(ArrowDirection.RIGHT_TO_LEFT_REVERSE).withDotted().withCrossX());
 
 		all.addAll(nonArrows);
 		return Collections.unmodifiableCollection(all);

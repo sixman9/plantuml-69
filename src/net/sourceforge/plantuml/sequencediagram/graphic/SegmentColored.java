@@ -28,16 +28,20 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 6026 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram.graphic;
 
 import java.awt.geom.Dimension2D;
+import java.util.AbstractCollection;
+import java.util.Collection;
+import java.util.Iterator;
 
 import net.sourceforge.plantuml.Dimension2DDouble;
 import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.skin.Component;
 import net.sourceforge.plantuml.skin.SimpleContext2D;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
@@ -84,8 +88,12 @@ class SegmentColored {
 		ug.translate((level - 1) * comp.getPreferredWidth(stringBounder) / 2, segment.getPos1());
 		final Dimension2D dim = new Dimension2DDouble(comp.getPreferredWidth(stringBounder), segment.getPos2()
 				- segment.getPos1());
-		comp.drawU(ug, dim, new SimpleContext2D(false));
+		comp.drawU(ug, new Area(dim), new SimpleContext2D(false));
 		ug.setTranslate(atX, atY);
+	}
+
+	public Collection<SegmentColored> cutSegmentIfNeed(Collection<Segment> allDelays) {
+		return new Coll2(segment.cutSegmentIfNeed(allDelays));
 	}
 
 	public SegmentColored merge(SegmentColored this2) {
@@ -94,6 +102,48 @@ class SegmentColored {
 
 	public final Segment getSegment() {
 		return segment;
+	}
+
+
+	class Iterator2 implements Iterator<SegmentColored> {
+
+		private final Iterator<Segment> it;
+
+		public Iterator2(Iterator<Segment> it) {
+			this.it = it;
+		}
+
+		public boolean hasNext() {
+			return it.hasNext();
+		}
+
+		public SegmentColored next() {
+			return new SegmentColored(it.next(), backcolor);
+		}
+
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	class Coll2 extends AbstractCollection<SegmentColored> {
+
+		private final Collection<Segment> col;
+
+		public Coll2(Collection<Segment> col) {
+			this.col = col;
+		}
+
+		@Override
+		public Iterator<SegmentColored> iterator() {
+			return new Iterator2(col.iterator());
+		}
+
+		@Override
+		public int size() {
+			return col.size();
+		}
+
 	}
 
 }

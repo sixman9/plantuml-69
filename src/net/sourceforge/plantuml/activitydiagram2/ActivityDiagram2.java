@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -52,12 +53,14 @@ import net.sourceforge.plantuml.cucadiagram.IEntity;
 import net.sourceforge.plantuml.cucadiagram.Link;
 import net.sourceforge.plantuml.cucadiagram.LinkDecor;
 import net.sourceforge.plantuml.cucadiagram.LinkType;
+import net.sourceforge.plantuml.cucadiagram.dot.DotMaker;
 
 public class ActivityDiagram2 extends CucaDiagram {
 
-	private Collection<IEntity> waitings = new ArrayList<IEntity>();
+	private Collection<IEntity> waitings = new LinkedHashSet<IEntity>();
 	private ConditionalContext2 currentContext;
-	private int futureLength = 2;
+	// private int futureLength = 2;
+	private String futureLabel = null;
 
 	private final Collection<String> pendingLabels = new HashSet<String>();
 	private final Map<String, IEntity> labels = new HashMap<String, IEntity>();
@@ -80,24 +83,75 @@ public class ActivityDiagram2 extends CucaDiagram {
 		return waitings.size() > 0;
 	}
 
-	public void newActivity(String display) {
+	public void newActivity(String display, Direction direction) {
 		if (waitings.size() == 0) {
 			throw new IllegalStateException();
 		}
 		final Entity act = createEntity(getAutoCode(), display, EntityType.ACTIVITY);
+		afterAdd(act, direction);
+
+	}
+
+	private final Map<String, IEntity> bars = new HashMap<String, IEntity>();
+
+	public void bar(String bar) {
+		final Direction direction = Direction.DOWN;
+		if (bars.containsKey(bar)) {
+			final IEntity existingBar = bars.get(bar);
+			for (Iterator<IEntity> it = waitings.iterator(); it.hasNext();) {
+				final IEntity w = it.next();
+				if (w.getType() == EntityType.SYNCHRO_BAR) {
+					it.remove();
+				}
+			}
+			afterAdd(existingBar, direction);
+			return;
+		}
+
+		if (waitings.size() == 0) {
+			// throw new IllegalStateException(bar);
+		}
+		label(bar);
+		final Entity act = createEntity(getAutoCode(), bar, EntityType.SYNCHRO_BAR);
+		bars.put(bar, act);
+		afterAdd(act, direction);
+	}
+
+	private void afterAdd(final IEntity dest, Direction direction) {
 		for (IEntity last : this.waitings) {
-			this.addLink(new Link(last, act, new LinkType(LinkDecor.ARROW, LinkDecor.NONE), null, futureLength));
+			// System.err.println("last=" + last);
+			// System.err.println("act=" + act);
+			final Link link;
+			if (direction == Direction.DOWN) {
+				link = new Link(last, dest, new LinkType(LinkDecor.ARROW, LinkDecor.NONE), futureLabel, 2);
+			} else if (direction == Direction.RIGHT) {
+				link = new Link(last, dest, new LinkType(LinkDecor.ARROW, LinkDecor.NONE), futureLabel, 1);
+			} else if (direction == Direction.LEFT) {
+				link = new Link(dest, last, new LinkType(LinkDecor.NONE, LinkDecor.ARROW), futureLabel, 1);
+			} else if (direction == Direction.UP) {
+				link = new Link(dest, last, new LinkType(LinkDecor.NONE, LinkDecor.ARROW), futureLabel, 2);
+			} else {
+				throw new UnsupportedOperationException();
+			}
+			this.addLink(link);
+			futureLabel = null;
 		}
 
 		for (String p : pendingLabels) {
-			labels.put(p, act);
+			labels.put(p, dest);
 		}
 		pendingLabels.clear();
 
 		this.waitings.clear();
-		this.waitings.add(act);
-		this.futureLength = 2;
+		this.waitings.add(dest);
+		// this.futureLength = 2;
+	}
 
+	public IEntity getLastEntityConsulted() {
+		if (waitings.size() == 1) {
+			return waitings.iterator().next();
+		}
+		return null;
 	}
 
 	private String getAutoCode() {
@@ -111,38 +165,64 @@ public class ActivityDiagram2 extends CucaDiagram {
 		this.waitings.add(createEntity("start", "start", EntityType.CIRCLE_START));
 	}
 
-	public void startIf(String test) {
-		final IEntity br = createEntity(getAutoCode(), "", EntityType.BRANCH);
-		currentContext = new ConditionalContext2(currentContext, br, Direction.DOWN);
+	public void startIf(String test, String when) {
+		final IEntity br = createEntity(getAutoCode(), test, EntityType.BRANCH);
+		if (DotMaker.MODE_BRANCHE_CLUSTER) {
+			test = null;
+		}
+		currentContext = new ConditionalContext2(currentContext, br, Direction.DOWN, when);
 		for (IEntity last : this.waitings) {
-			this.addLink(new Link(last, br, new LinkType(LinkDecor.ARROW, LinkDecor.NONE), null, futureLength));
+			// if (test == null) {
+			// // this.addLink(new Link(last, br, new LinkType(LinkDecor.ARROW,
+			// // LinkDecor.NONE), test, futureLength));
+			// throw new IllegalArgumentException();
+			// } else {
+			this.addLink(new Link(last, br, new LinkType(LinkDecor.ARROW, LinkDecor.NONE), this.futureLabel, 2, null,
+					test, getLabeldistance(), getLabelangle()));
+			// }
+			test = null;
 		}
 		this.waitings.clear();
 		this.waitings.add(br);
-		this.futureLength = 2;
+		// this.futureLength = 2;
+		this.futureLabel = when;
 	}
 
-	public Collection<IEntity> getLastEntityConsulted2() {
-		return this.waitings;
-	}
+	// public Collection<IEntity> getWaitings() {
+	// return this.waitings;
+	// }
 
 	public void endif() {
-		this.waitings.add(currentContext.getPending());
+		// final boolean hasElse = currentContext.isHasElse();
+		// System.err.println("CALL endif hasElse " + hasElse);
+		this.waitings.addAll(currentContext.getPendings());
 		currentContext = currentContext.getParent();
+		// if (currentContext == null) {
+		// System.err.println("after endif " + currentContext);
+		// } else {
+		// System.err.println("after endif " + currentContext.getPendings());
+		// }
 	}
 
-	public void else2() {
-		this.currentContext.setPending(this.waitings.iterator().next());
+	public void else2(String when) {
+		this.currentContext.executeElse(this.waitings);
 		this.waitings.clear();
 		this.waitings.add(currentContext.getBranch());
+		this.futureLabel = when;
 	}
 
 	public void label(String label) {
 		pendingLabels.add(label);
 		for (final Iterator<PendingLink> it = pendingLinks.iterator(); it.hasNext();) {
 			final PendingLink pending = it.next();
-			if (pending.getLabel().equals(label)) {
+			if (pending.getGotoLabel().equals(label)) {
+				if (pending.getLinkLabel() != null) {
+					this.futureLabel = pending.getLinkLabel();
+				}
+				final List<IEntity> olds = new ArrayList<IEntity>(waitings);
+				waitings.clear();
 				waitings.add(pending.getEntityFrom());
+				waitings.addAll(olds);
 				it.remove();
 			}
 		}
@@ -150,16 +230,34 @@ public class ActivityDiagram2 extends CucaDiagram {
 
 	private final Collection<PendingLink> pendingLinks = new ArrayList<PendingLink>();
 
-	public void callGoto(String label) {
-		final IEntity dest = labels.get(label);
+	public void callGoto(String gotoLabel) {
+		// System.err.println("CALL goto " + gotoLabel);
+		final IEntity dest = labels.get(gotoLabel);
 		for (IEntity last : this.waitings) {
 			if (dest == null) {
-				this.pendingLinks.add(new PendingLink(last, label));
-
+				this.pendingLinks.add(new PendingLink(last, gotoLabel, this.futureLabel));
 			} else {
-				this.addLink(new Link(last, dest, new LinkType(LinkDecor.ARROW, LinkDecor.NONE), null, futureLength));
+				// final Link link = new Link(last, dest, new LinkType(LinkDecor.ARROW, LinkDecor.NONE),
+				// this.futureLabel,
+				// this.futureLength);
+				final Link link = new Link(last, dest, new LinkType(LinkDecor.ARROW, LinkDecor.NONE), this.futureLabel,
+						2);
+				link.setConstraint(false);
+				this.addLink(link);
 			}
 		}
+		this.futureLabel = null;
+		// System.err.println("Avant fin goto, waitings=" + waitings);
 		this.waitings.clear();
+		// currentContext.clearPendingsButFirst();
 	}
+
+	public void end(Direction direction) {
+		if (waitings.size() == 0) {
+			throw new IllegalStateException();
+		}
+		final IEntity act = getOrCreateEntity("end", EntityType.CIRCLE_END);
+		afterAdd(act, direction);
+	}
+
 }

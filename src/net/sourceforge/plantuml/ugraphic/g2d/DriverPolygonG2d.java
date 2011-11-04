@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 3837 $
+ * Revision $Revision: 7294 $
  *
  */
 package net.sourceforge.plantuml.ugraphic.g2d;
@@ -38,14 +38,21 @@ import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.geom.Point2D;
 
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
 import net.sourceforge.plantuml.ugraphic.UDriver;
 import net.sourceforge.plantuml.ugraphic.UParam;
 import net.sourceforge.plantuml.ugraphic.UPolygon;
 import net.sourceforge.plantuml.ugraphic.UShape;
 
-public class DriverPolygonG2d implements UDriver<Graphics2D> {
+public class DriverPolygonG2d extends DriverShadowedG2d implements UDriver<Graphics2D> {
 
-	public void draw(UShape ushape, double x, double y, UParam param, Graphics2D g2d) {
+	private final double dpiFactor;
+
+	public DriverPolygonG2d(double dpiFactor) {
+		this.dpiFactor = dpiFactor;
+	}
+
+	public void draw(UShape ushape, double x, double y, ColorMapper mapper, UParam param, Graphics2D g2d) {
 		final UPolygon shape = (UPolygon) ushape;
 
 		final Polygon polygon = new Polygon();
@@ -55,12 +62,16 @@ public class DriverPolygonG2d implements UDriver<Graphics2D> {
 			polygon.addPoint((int) (pt.getX() + x), (int) (pt.getY() + y));
 		}
 
+		if (shape.getDeltaShadow() != 0) {
+			drawShadow(g2d, polygon, shape.getDeltaShadow(), dpiFactor);
+		}
+
 		if (param.getBackcolor() != null) {
-			g2d.setColor(param.getBackcolor());
+			g2d.setColor(mapper.getMappedColor(param.getBackcolor()));
 			g2d.fill(polygon);
 		}
 		if (param.getColor() != null) {
-			g2d.setColor(param.getColor());
+			g2d.setColor(mapper.getMappedColor(param.getColor()));
 			g2d.draw(polygon);
 		}
 	}

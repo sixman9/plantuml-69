@@ -28,23 +28,24 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 6009 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.geom.Dimension2D;
 import java.util.Arrays;
 import java.util.List;
 
 import net.sourceforge.plantuml.graphic.FontConfiguration;
 import net.sourceforge.plantuml.graphic.HorizontalAlignement;
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.graphic.TextBlock;
 import net.sourceforge.plantuml.graphic.TextBlockUtils;
 import net.sourceforge.plantuml.skin.AbstractTextualComponent;
+import net.sourceforge.plantuml.skin.Area;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.UPolygon;
@@ -58,13 +59,15 @@ public class ComponentRoseGroupingHeader extends AbstractTextualComponent {
 
 	private final TextBlock commentTextBlock;
 
-	private final Color groupBackground;
-	private final Color background;
+	private final HtmlColor groupBackground;
+	private final HtmlColor groupBorder;
+	private final HtmlColor background;
 
-	public ComponentRoseGroupingHeader(Color fontColor, Color background, Color groupBackground, Font bigFont,
-			Font smallFont, List<? extends CharSequence> strings) {
+	public ComponentRoseGroupingHeader(HtmlColor fontColor, HtmlColor background, HtmlColor groupBackground, HtmlColor groupBorder, UFont bigFont,
+			UFont smallFont, List<? extends CharSequence> strings) {
 		super(strings.get(0), fontColor, bigFont, HorizontalAlignement.LEFT, 15, 30, 1);
 		this.groupBackground = groupBackground;
+		this.groupBorder = groupBorder;
 		this.background = background;
 		if (strings.size() == 1 || strings.get(1) == null) {
 			this.commentTextBlock = null;
@@ -98,7 +101,8 @@ public class ComponentRoseGroupingHeader extends AbstractTextualComponent {
 	}
 
 	@Override
-	protected void drawBackgroundInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawBackgroundInternalU(UGraphic ug, Area area) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		if (this.background == null) {
 			return;
 		}
@@ -108,7 +112,8 @@ public class ComponentRoseGroupingHeader extends AbstractTextualComponent {
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		final StringBounder stringBounder = ug.getStringBounder();
 		final int textWidth = (int) getTextWidth(stringBounder);
 		final int textHeight = (int) getTextHeight(stringBounder);
@@ -124,8 +129,8 @@ public class ComponentRoseGroupingHeader extends AbstractTextualComponent {
 		polygon.addPoint(0, 0);
 
 		ug.getParam().setStroke(new UStroke(2));
-		ug.getParam().setColor(getFontColor());
-		ug.getParam().setBackcolor(this.groupBackground);
+		ug.getParam().setColor(groupBorder);
+		ug.getParam().setBackcolor(groupBackground);
 		ug.draw(0, 0, polygon);
 
 		final double heightWithoutPadding = dimensionToUse.getHeight() - getPaddingY();

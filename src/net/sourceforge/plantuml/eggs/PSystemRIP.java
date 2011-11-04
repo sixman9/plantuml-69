@@ -33,17 +33,13 @@
  */
 package net.sourceforge.plantuml.eggs;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -52,6 +48,8 @@ import net.sourceforge.plantuml.AbstractPSystem;
 import net.sourceforge.plantuml.FileFormatOption;
 import net.sourceforge.plantuml.graphic.GraphicPosition;
 import net.sourceforge.plantuml.graphic.GraphicStrings;
+import net.sourceforge.plantuml.graphic.HtmlColor;
+import net.sourceforge.plantuml.ugraphic.UFont;
 
 public class PSystemRIP extends AbstractPSystem {
 
@@ -75,26 +73,13 @@ public class PSystemRIP extends AbstractPSystem {
 		is.close();
 	}
 
-	public List<File> createFiles(File suggestedFile, FileFormatOption fileFormat) throws IOException, InterruptedException {
-		OutputStream os = null;
-		try {
-			os = new FileOutputStream(suggestedFile);
-			getGraphicStrings().writeImage(os, fileFormat);
-		} finally {
-			if (os != null) {
-				os.close();
-			}
-		}
-		return Arrays.asList(suggestedFile);
-	}
-
-	public void createFile(OutputStream os, int index, FileFormatOption fileFormat) throws IOException {
+	public void exportDiagram(OutputStream os, StringBuilder cmap, int index, FileFormatOption fileFormat) throws IOException {
 		getGraphicStrings().writeImage(os, fileFormat);
 	}
 
 	private GraphicStrings getGraphicStrings() throws IOException {
-		final Font font = new Font("SansSerif", Font.PLAIN, 12);
-		return new GraphicStrings(strings, font, Color.BLACK, Color.WHITE, image, GraphicPosition.BOTTOM, false);
+		final UFont font = new UFont("SansSerif", Font.PLAIN, 12);
+		return new GraphicStrings(strings, font, HtmlColor.BLACK, HtmlColor.WHITE, image, GraphicPosition.BOTTOM, false);
 	}
 
 	public String getDescription() {

@@ -33,25 +33,27 @@
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
 import java.awt.geom.Dimension2D;
 
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.skin.AbstractComponent;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.UStroke;
 
 public class ComponentRoseDelayLine extends AbstractComponent {
 
-	private final Color color;
+	private final HtmlColor color;
 
-	public ComponentRoseDelayLine(Color color) {
+	public ComponentRoseDelayLine(HtmlColor color) {
 		this.color = color;
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		ug.getParam().setColor(color);
 		// stroke(ug, 0.4, 2.5);
 		stroke(ug, 1, 4);

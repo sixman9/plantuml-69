@@ -50,6 +50,7 @@ import net.sourceforge.plantuml.cucadiagram.Link;
 import net.sourceforge.plantuml.cucadiagram.LinkDecor;
 import net.sourceforge.plantuml.cucadiagram.LinkType;
 import net.sourceforge.plantuml.cucadiagram.Stereotype;
+import net.sourceforge.plantuml.graphic.HtmlColor;
 
 public class CommandLinkActivity extends SingleLineCommand2<ActivityDiagram> {
 
@@ -58,20 +59,33 @@ public class CommandLinkActivity extends SingleLineCommand2<ActivityDiagram> {
 	}
 
 	static RegexConcat getRegexConcat() {
-		return new RegexConcat(new RegexLeaf("^"), new RegexOr("FIRST", true, new RegexLeaf("STAR", "(\\(\\*\\))"),
-				new RegexLeaf("CODE", "([\\p{L}0-9_.]+)"), new RegexLeaf("BAR",
-						"(?:==+)\\s*([\\p{L}0-9_.]+)\\s*(?:==+)"), new RegexLeaf("QUOTED",
-						"\"([^\"]+)\"(?:\\s+as\\s+([\\p{L}0-9_.]+))?")), new RegexLeaf("\\s*"), new RegexLeaf(
-				"STEREOTYPE", "(\\<\\<.*\\>\\>)?"), new RegexLeaf("\\s*"), new RegexLeaf("BACKCOLOR", "(#\\w+)?"),
-				new RegexLeaf("\\s*"),
-				new RegexLeaf("ARROW", "([=-]+(?:left|right|up|down|le?|ri?|up?|do?)?[=-]*\\>)"),
-				new RegexLeaf("\\s*"), new RegexLeaf("BRACKET", "(?:\\[([^\\]*]+[^\\]]*)\\])?"), new RegexLeaf("\\s*"),
-				new RegexOr("FIRST2", new RegexLeaf("STAR2", "(\\(\\*\\))"), new RegexLeaf("OPENBRACKET2", "(\\{)"),
-						new RegexLeaf("CODE2", "([\\p{L}0-9_.]+)"), new RegexLeaf("BAR2",
-								"(?:==+)\\s*([\\p{L}0-9_.]+)\\s*(?:==+)"), new RegexLeaf("QUOTED2",
-								"\"([^\"]+)\"(?:\\s+as\\s+([\\p{L}0-9_.]+))?")), new RegexLeaf("\\s*"), new RegexLeaf(
-						"STEREOTYPE2", "(\\<\\<.*\\>\\>)?"), new RegexLeaf("\\s*"), new RegexLeaf("BACKCOLOR2",
-						"(#\\w+)?"), new RegexLeaf("$"));
+		return new RegexConcat(
+				new RegexLeaf("^"), // 
+				new RegexOr("FIRST", true, // 
+						new RegexLeaf("STAR", "(\\(\\*(top)?\\))"), //
+						new RegexLeaf("CODE", "([\\p{L}0-9_.]+)"), // 
+						new RegexLeaf("BAR", "(?:==+)\\s*([\\p{L}0-9_.]+)\\s*(?:==+)"), //
+						new RegexLeaf("QUOTED", "\"([^\"]+)\"(?:\\s+as\\s+([\\p{L}0-9_.]+))?")), //
+				new RegexLeaf("\\s*"), //
+				new RegexLeaf("STEREOTYPE", "(\\<\\<.*\\>\\>)?"), //
+				new RegexLeaf("\\s*"), //
+				new RegexLeaf("BACKCOLOR", "(#\\w+)?"), // 
+				new RegexLeaf("\\s*"), // 
+				new RegexLeaf("ARROW", "([=-]+(?:\\*|left|right|up|down|le?|ri?|up?|do?)?[=-]*\\>)"), //
+				new RegexLeaf("\\s*"), //
+				new RegexLeaf("BRACKET", "(?:\\[([^\\]*]+[^\\]]*)\\])?"), // 
+				new RegexLeaf("\\s*"), //
+				new RegexOr("FIRST2", // 
+						new RegexLeaf("STAR2", "(\\(\\*(top)?\\))"), // 
+						new RegexLeaf("OPENBRACKET2", "(\\{)"), // 
+						new RegexLeaf("CODE2", "([\\p{L}0-9_.]+)"), // 
+						new RegexLeaf("BAR2", "(?:==+)\\s*([\\p{L}0-9_.]+)\\s*(?:==+)"), // 
+						new RegexLeaf("QUOTED2", "\"([^\"]+)\"(?:\\s+as\\s+([\\p{L}0-9_.]+))?")),
+				new RegexLeaf("\\s*"), // 
+				new RegexLeaf("STEREOTYPE2", "(\\<\\<.*\\>\\>)?"), //
+				new RegexLeaf("\\s*"), //
+				new RegexLeaf("BACKCOLOR2", "(#\\w+)?"), //
+				new RegexLeaf("$"));
 	}
 
 	@Override
@@ -84,7 +98,7 @@ public class CommandLinkActivity extends SingleLineCommand2<ActivityDiagram> {
 			entity1.setStereotype(new Stereotype(arg2.get("STEREOTYPE").get(0)));
 		}
 		if (arg2.get("BACKCOLOR").get(0) != null) {
-			entity1.setSpecificBackcolor(arg2.get("BACKCOLOR").get(0));
+			entity1.setSpecificBackcolor(HtmlColor.getColorIfValid(arg2.get("BACKCOLOR").get(0)));
 		}
 
 		final IEntity entity2 = getEntity(getSystem(), arg2, false);
@@ -92,7 +106,7 @@ public class CommandLinkActivity extends SingleLineCommand2<ActivityDiagram> {
 			return CommandExecutionResult.error("No such activity");
 		}
 		if (arg2.get("BACKCOLOR2").get(0) != null) {
-			entity2.setSpecificBackcolor(arg2.get("BACKCOLOR2").get(0));
+			entity2.setSpecificBackcolor(HtmlColor.getColorIfValid(arg2.get("BACKCOLOR2").get(0)));
 		}
 		if (arg2.get("STEREOTYPE2").get(0) != null) {
 			entity2.setStereotype(new Stereotype(arg2.get("STEREOTYPE2").get(0)));
@@ -101,9 +115,15 @@ public class CommandLinkActivity extends SingleLineCommand2<ActivityDiagram> {
 		final String linkLabel = arg2.get("BRACKET").get(0);
 
 		final String arrow = StringUtils.manageArrowForCuca(arg2.get("ARROW").get(0));
-		final int lenght = arrow.length() - 1;
+		int lenght = arrow.length() - 1;
+		if (arg2.get("ARROW").get(0).contains("*")) {
+			lenght = 2;
+		}
 
 		Link link = new Link(entity1, entity2, new LinkType(LinkDecor.ARROW, LinkDecor.NONE), linkLabel, lenght);
+		if (arg2.get("ARROW").get(0).contains("*")) {
+			link.setConstraint(false);
+		}
 		final Direction direction = StringUtils.getArrowDirection(arg2.get("ARROW").get(0));
 		if (direction == Direction.LEFT || direction == Direction.UP) {
 			link = link.getInv();
@@ -124,6 +144,9 @@ public class CommandLinkActivity extends SingleLineCommand2<ActivityDiagram> {
 		}
 		if (arg.get("STAR" + suf).get(0) != null) {
 			if (start) {
+				if (arg.get("STAR" + suf).get(1) != null) {
+					system.getStart().setTop(true);
+				}
 				return system.getStart();
 			}
 			return system.getEnd();

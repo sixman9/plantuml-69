@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 6005 $
+ * Revision $Revision: 6711 $
  *
  */
 package net.sourceforge.plantuml.cucadiagram.dot;
@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import net.sourceforge.plantuml.FileFormat;
@@ -80,7 +81,7 @@ abstract class AbstractGraphviz implements Graphviz {
 
 	abstract protected File specificDotExe();
 
-	final public void createPng(OutputStream os) throws IOException, InterruptedException {
+	final public void createFile(OutputStream os) throws IOException, InterruptedException {
 		if (dotString == null) {
 			throw new IllegalArgumentException();
 		}
@@ -90,12 +91,15 @@ abstract class AbstractGraphviz implements Graphviz {
 			return;
 		}
 		final String cmd = getCommandLine();
+		ProcessRunner p = null;
 		try {
 			Log.info("Starting Graphviz process " + cmd);
 			Log.info("DotString size: " + dotString.length());
-			final ProcessRunner p = new ProcessRunner(cmd);
+			p = new ProcessRunner(cmd);
 			p.run(dotString.getBytes(), os);
 			Log.info("Ending process ok");
+		} catch (InterruptedException e) {
+			Log.error("Interrupted");
 		} catch (Throwable e) {
 			e.printStackTrace();
 			Log.error("Error: " + e);
@@ -105,8 +109,20 @@ abstract class AbstractGraphviz implements Graphviz {
 			Log.error("");
 		} finally {
 			Log.info("Ending Graphviz process");
-
 		}
+		if (OptionFlags.getInstance().isCheckDotError() && p != null && p.getError().length() > 0) {
+			Log.error("GraphViz error stream : " + p.getError());
+			if (OptionFlags.getInstance().isCheckDotError()) {
+				throw new IllegalStateException("Dot error " + p.getError());
+			}
+		}
+		if (OptionFlags.getInstance().isCheckDotError() && p != null && p.getOut().length() > 0) {
+			Log.error("GraphViz out stream : " + p.getOut());
+			if (OptionFlags.getInstance().isCheckDotError()) {
+				throw new IllegalStateException("Dot out " + p.getOut());
+			}
+		}
+
 	}
 
 	private boolean illegalDotExe() {
@@ -115,6 +131,11 @@ abstract class AbstractGraphviz implements Graphviz {
 
 	final public String dotVersion() throws IOException, InterruptedException {
 		final String cmd = getCommandLineVersion();
+		return executeCmd(cmd);
+	}
+
+	public String testFile(String dotfilename, String outfile) throws IOException, InterruptedException {
+		final String cmd = getCommandLine() + "-o" + outfile + " " + dotfilename;
 		return executeCmd(cmd);
 	}
 
@@ -173,6 +194,14 @@ abstract class AbstractGraphviz implements Graphviz {
 		for (String t : type) {
 			sb.append(" -T" + t + " ");
 		}
+	}
+
+	public final String getDotString() {
+		return dotString;
+	}
+
+	public final List<String> getType() {
+		return Arrays.asList(type);
 	}
 
 }

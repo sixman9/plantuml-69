@@ -34,19 +34,22 @@
 package net.sourceforge.plantuml.classdiagram.command;
 
 import java.util.EnumSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import net.sourceforge.plantuml.classdiagram.ClassDiagram;
 import net.sourceforge.plantuml.command.CommandExecutionResult;
-import net.sourceforge.plantuml.command.SingleLineCommand;
+import net.sourceforge.plantuml.command.SingleLineCommand2;
+import net.sourceforge.plantuml.command.regex.RegexConcat;
+import net.sourceforge.plantuml.command.regex.RegexLeaf;
+import net.sourceforge.plantuml.command.regex.RegexPartialMatch;
 import net.sourceforge.plantuml.cucadiagram.EntityGender;
 import net.sourceforge.plantuml.cucadiagram.EntityGenderUtils;
 import net.sourceforge.plantuml.cucadiagram.EntityPortion;
 import net.sourceforge.plantuml.cucadiagram.EntityType;
 import net.sourceforge.plantuml.cucadiagram.IEntity;
 
-public class CommandHideShow extends SingleLineCommand<ClassDiagram> {
+public class CommandHideShow extends SingleLineCommand2<ClassDiagram> {
 
 	private static final EnumSet<EntityPortion> PORTION_METHOD = EnumSet.<EntityPortion> of(EntityPortion.METHOD);
 	private static final EnumSet<EntityPortion> PORTION_MEMBER = EnumSet.<EntityPortion> of(EntityPortion.FIELD,
@@ -54,9 +57,18 @@ public class CommandHideShow extends SingleLineCommand<ClassDiagram> {
 	private static final EnumSet<EntityPortion> PORTION_FIELD = EnumSet.<EntityPortion> of(EntityPortion.FIELD);
 
 	public CommandHideShow(ClassDiagram classDiagram) {
-		super(
-				classDiagram,
-				"(?i)^(hide|show)\\s+(?:(class|interface|enum|abstract|[\\p{L}0-9_.]+|\"[^\"]+\"|\\<\\<.*\\>\\>)\\s+)*?(?:(empty)\\s+)?(members?|attributes?|fields?|methods?|circle\\w*|stereotypes?)$");
+		super(classDiagram, getRegexConcat());
+	}
+
+	static RegexConcat getRegexConcat() {
+		return new RegexConcat(new RegexLeaf("^"), // 
+				new RegexLeaf("COMMAND", "(hide|show)"), //
+				new RegexLeaf("\\s+"), //
+				new RegexLeaf("GENDER",
+						"(?:(class|interface|enum|abstract|[\\p{L}0-9_.]+|\"[^\"]+\"|\\<\\<.*\\>\\>)\\s+)*?"), //
+				new RegexLeaf("EMPTY", "(?:(empty)\\s+)?"), //
+				new RegexLeaf("PORTION", "(members?|attributes?|fields?|methods?|circle\\w*|stereotypes?)"), //
+				new RegexLeaf("$"));
 	}
 
 	private final EntityGender emptyByGender(Set<EntityPortion> portion) {
@@ -73,35 +85,38 @@ public class CommandHideShow extends SingleLineCommand<ClassDiagram> {
 	}
 
 	@Override
-	protected CommandExecutionResult executeArg(List<String> arg) {
-		final Set<EntityPortion> portion = getEntityPortion(arg.get(3));
+	protected CommandExecutionResult executeArg(Map<String, RegexPartialMatch> arg) {
+
+		final Set<EntityPortion> portion = getEntityPortion(arg.get("PORTION").get(0));
 		EntityGender gender = null;
 
-		if (arg.get(1) == null) {
+		final String arg1 = arg.get("GENDER").get(0);
+
+		if (arg1 == null) {
 			gender = EntityGenderUtils.all();
-		} else if (arg.get(1).equalsIgnoreCase("class")) {
+		} else if (arg1.equalsIgnoreCase("class")) {
 			gender = EntityGenderUtils.byEntityType(EntityType.CLASS);
-		} else if (arg.get(1).equalsIgnoreCase("interface")) {
+		} else if (arg1.equalsIgnoreCase("interface")) {
 			gender = EntityGenderUtils.byEntityType(EntityType.INTERFACE);
-		} else if (arg.get(1).equalsIgnoreCase("enum")) {
+		} else if (arg1.equalsIgnoreCase("enum")) {
 			gender = EntityGenderUtils.byEntityType(EntityType.ENUM);
-		} else if (arg.get(1).equalsIgnoreCase("abstract")) {
+		} else if (arg1.equalsIgnoreCase("abstract")) {
 			gender = EntityGenderUtils.byEntityType(EntityType.ABSTRACT_CLASS);
-		} else if (arg.get(1).startsWith("<<")) {
-			gender = EntityGenderUtils.byStereotype(arg.get(1));
+		} else if (arg1.startsWith("<<")) {
+			gender = EntityGenderUtils.byStereotype(arg1);
 		} else {
-			final IEntity entity = getSystem().getOrCreateClass(arg.get(1));
+			final IEntity entity = getSystem().getOrCreateClass(arg1);
 			gender = EntityGenderUtils.byEntityAlone(entity);
 		}
 		if (gender != null) {
-			final boolean empty = arg.get(2) != null;
+			final boolean empty = arg.get("EMPTY").get(0) != null;
 			if (empty == true) {
 				gender = EntityGenderUtils.and(gender, emptyByGender(portion));
 			}
 			if (getSystem().getCurrentGroup() != null) {
 				gender = EntityGenderUtils.and(gender, EntityGenderUtils.byPackage(getSystem().getCurrentGroup()));
 			}
-			getSystem().hideOrShow(gender, portion, arg.get(0).equalsIgnoreCase("show"));
+			getSystem().hideOrShow(gender, portion, arg.get("COMMAND").get(0).equalsIgnoreCase("show"));
 		}
 		return CommandExecutionResult.ok();
 	}
@@ -125,4 +140,5 @@ public class CommandHideShow extends SingleLineCommand<ClassDiagram> {
 		}
 		throw new IllegalArgumentException();
 	}
+
 }

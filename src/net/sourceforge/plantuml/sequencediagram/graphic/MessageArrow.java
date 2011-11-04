@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 6026 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram.graphic;
@@ -38,6 +38,7 @@ import java.awt.geom.Dimension2D;
 import net.sourceforge.plantuml.Dimension2DDouble;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.sequencediagram.NotePosition;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.skin.ArrowComponent;
 import net.sourceforge.plantuml.skin.Component;
 import net.sourceforge.plantuml.skin.Context2D;
@@ -125,7 +126,11 @@ class MessageArrow extends Arrow {
 	protected void drawInternalU(UGraphic ug, double maxX, Context2D context) {
 		final StringBounder stringBounder = ug.getStringBounder();
 		ug.translate(getStartingX(stringBounder), getStartingY());
-		getArrowComponent().drawU(ug, getActualDimension(stringBounder), context);
+//		ug.getParam().setColor(Color.GREEN);
+//		ug.getParam().setBackcolor(Color.LIGHT_GRAY);
+//		ug.draw(0, 0, new URectangle(getActualDimension(stringBounder).getWidth(), getActualDimension(stringBounder)
+//				.getHeight()));
+		getArrowComponent().drawU(ug, new Area(getActualDimension(stringBounder)), context);
 	}
 
 	private Dimension2D getActualDimension(StringBounder stringBounder) {
@@ -166,5 +171,5 @@ class MessageArrow extends Arrow {
 	public String toString(StringBounder stringBounder) {
 		return getMinX(stringBounder) + "-" + getMaxX(stringBounder);
 	}
-	
+
 }

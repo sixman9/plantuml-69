@@ -31,7 +31,6 @@
  */
 package net.sourceforge.plantuml.ugraphic.eps;
 
-import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.font.TextLayout;
 import java.awt.image.BufferedImage;
@@ -44,13 +43,17 @@ import net.sourceforge.plantuml.eps.EpsStrategy;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.graphic.StringBounderUtils;
 import net.sourceforge.plantuml.graphic.UnusedSpace;
+import net.sourceforge.plantuml.posimo.DotPath;
 import net.sourceforge.plantuml.skin.UDrawable;
 import net.sourceforge.plantuml.ugraphic.AbstractUGraphic;
 import net.sourceforge.plantuml.ugraphic.ClipContainer;
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
 import net.sourceforge.plantuml.ugraphic.UClip;
 import net.sourceforge.plantuml.ugraphic.UEllipse;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UImage;
 import net.sourceforge.plantuml.ugraphic.ULine;
+import net.sourceforge.plantuml.ugraphic.UPath;
 import net.sourceforge.plantuml.ugraphic.UPolygon;
 import net.sourceforge.plantuml.ugraphic.URectangle;
 import net.sourceforge.plantuml.ugraphic.UText;
@@ -62,20 +65,21 @@ public class UGraphicEps extends AbstractUGraphic<EpsGraphics> implements ClipCo
 
 	private final StringBounder stringBounder;
 
-	public UGraphicEps(EpsStrategy strategy) {
-		this(strategy.creatEpsGraphics());
+	public UGraphicEps(ColorMapper colorMapper, EpsStrategy strategy) {
+		this(colorMapper, strategy, strategy.creatEpsGraphics());
 	}
 
-	private UGraphicEps(EpsGraphics eps) {
-		super(eps);
+	private UGraphicEps(ColorMapper colorMapper, EpsStrategy strategy, EpsGraphics eps) {
+		super(colorMapper, eps);
 		stringBounder = StringBounderUtils.asStringBounder(imDummy);
 		registerDriver(URectangle.class, new DriverRectangleEps(this));
-		registerDriver(UText.class, new DriverTextEps(imDummy, this));
+		registerDriver(UText.class, new DriverTextEps(imDummy, this, strategy));
 		registerDriver(ULine.class, new DriverLineEps(this));
 		registerDriver(UPolygon.class, new DriverPolygonEps(this));
 		registerDriver(UEllipse.class, new DriverEllipseEps());
 		registerDriver(UImage.class, new DriverImageEps());
-		// registerDriver(UPath.class, new DriverPathSvg(this));
+		registerDriver(UPath.class, new DriverPathEps());
+		registerDriver(DotPath.class, new DriverDotPathEps());
 	}
 
 	public void close() {
@@ -94,40 +98,54 @@ public class UGraphicEps extends AbstractUGraphic<EpsGraphics> implements ClipCo
 		return stringBounder;
 	}
 
+	public void drawEps(String eps, double x, double y) {
+		this.getGraphicObject().drawEps(eps, x, y);
+	}
+
 	public void setClip(UClip clip) {
-		this.clip = clip;
+		this.clip = clip == null ? null : clip.translate(getTranslateX(), getTranslateY());
 	}
 
 	public UClip getClip() {
 		return clip;
 	}
 
-	public void centerChar(double x, double y, char c, Font font) {
+	public void centerChar(double x, double y, char c, UFont font) {
 		final UnusedSpace unusedSpace = UnusedSpace.getUnusedSpace(font, c);
 
 		final double xpos = x - unusedSpace.getCenterX() - 0.5;
 		final double ypos = y - unusedSpace.getCenterY() - 0.5;
 
-		final TextLayout t = new TextLayout("" + c, font, imDummy.getFontRenderContext());
-		getGraphicObject().setStrokeColor(getParam().getColor());
+		final TextLayout t = new TextLayout("" + c, font.getFont(), imDummy.getFontRenderContext());
+		getGraphicObject().setStrokeColor(getColorMapper().getMappedColor(getParam().getColor()));
 		DriverTextEps.drawPathIterator(getGraphicObject(), xpos + getTranslateX(), ypos + getTranslateY(), t
 				.getOutline(null).getPathIterator(null));
 
 	}
 
-	static public String getEpsString(UDrawable udrawable) throws IOException {
-		final UGraphicEps ug = new UGraphicEps(EpsStrategy.getDefault());
+	static public String getEpsString(ColorMapper colorMapper, EpsStrategy epsStrategy, UDrawable udrawable)
+			throws IOException {
+		final UGraphicEps ug = new UGraphicEps(colorMapper, epsStrategy);
 		udrawable.drawU(ug);
 		return ug.getEPSCode();
 	}
 
-	static public void copyEpsToFile(UDrawable udrawable, File f) throws IOException {
+	static public void copyEpsToFile(ColorMapper colorMapper, UDrawable udrawable, File f) throws IOException {
 		final PrintWriter pw = new PrintWriter(f);
-		pw.print(UGraphicEps.getEpsString(udrawable));
+		final EpsStrategy epsStrategy = EpsStrategy.getDefault2();
+		pw.print(UGraphicEps.getEpsString(colorMapper, epsStrategy, udrawable));
 		pw.close();
 	}
 
 	public void setAntiAliasing(boolean trueForOn) {
+	}
+
+	public void setUrl(String url, String tooltip) {
+		if (url == null) {
+			getGraphicObject().closeLink();
+		} else {
+			getGraphicObject().openLink(url);
+		}
 	}
 
 }

@@ -28,11 +28,12 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 4321 $
+ * Revision $Revision: 7451 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram;
 
+import net.sourceforge.plantuml.Url;
 import net.sourceforge.plantuml.graphic.HtmlColor;
 
 public class GroupingLeaf extends Grouping {
@@ -74,4 +75,18 @@ public class GroupingLeaf extends Grouping {
 		}
 		return backColorGeneral;
 	}
+
+	public boolean dealWith(Participant someone) {
+		return false;
+	}
+
+	public Url getUrl() {
+		return null;
+	}
+
+	@Override
+	public boolean isParallel() {
+		return start.isParallel();
+	}
+
 }

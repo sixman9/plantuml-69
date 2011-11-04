@@ -28,19 +28,20 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5977 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.skin.bluemodern;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.geom.Dimension2D;
 import java.util.List;
 
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.skin.ArrowConfiguration;
+import net.sourceforge.plantuml.skin.ArrowHead;
 import net.sourceforge.plantuml.skin.ArrowPart;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.UPolygon;
@@ -50,19 +51,19 @@ public class ComponentBlueModernSelfArrow extends AbstractComponentBlueModernArr
 
 	private final double arrowWidth = 45;
 
-	public ComponentBlueModernSelfArrow(Color foregroundColor, Color colorFont, Font font,
+	public ComponentBlueModernSelfArrow(HtmlColor foregroundColor, HtmlColor colorFont, UFont font,
 			List<? extends CharSequence> stringsToDisplay, ArrowConfiguration arrowConfiguration) {
 		super(foregroundColor, colorFont, font, stringsToDisplay, arrowConfiguration);
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
 		final StringBounder stringBounder = ug.getStringBounder();
 		final int textHeight = (int) getTextHeight(stringBounder);
 
 		ug.getParam().setBackcolor(getForegroundColor());
 		ug.getParam().setColor(getForegroundColor());
-		final int x2 = (int) arrowWidth;
+		final double x2 = arrowWidth - 3;
 
 		if (getArrowConfiguration().isDotted()) {
 			stroke(ug, 5, 2);
@@ -81,7 +82,7 @@ public class ComponentBlueModernSelfArrow extends AbstractComponentBlueModernArr
 
 		final int delta = (int) getArrowOnlyHeight(stringBounder);
 
-		if (getArrowConfiguration().isASync()) {
+		if (getArrowConfiguration().getHead() == ArrowHead.ASYNC) {
 			ug.getParam().setStroke(new UStroke(1.5));
 			if (getArrowConfiguration().getPart() != ArrowPart.BOTTOM_PART) {
 				ug.draw(getArrowDeltaX2(), textHeight - getArrowDeltaY2() + delta, new ULine(-getArrowDeltaX2(),

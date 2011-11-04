@@ -33,12 +33,16 @@
  */
 package net.sourceforge.plantuml.activitydiagram2;
 
+import net.sourceforge.plantuml.activitydiagram2.command.CommandBar2;
 import net.sourceforge.plantuml.activitydiagram2.command.CommandElse2;
+import net.sourceforge.plantuml.activitydiagram2.command.CommandEnd2;
 import net.sourceforge.plantuml.activitydiagram2.command.CommandEndif2;
 import net.sourceforge.plantuml.activitydiagram2.command.CommandGoto2;
 import net.sourceforge.plantuml.activitydiagram2.command.CommandIf2;
 import net.sourceforge.plantuml.activitydiagram2.command.CommandLabel2;
+import net.sourceforge.plantuml.activitydiagram2.command.CommandMultilinesNoteActivity2;
 import net.sourceforge.plantuml.activitydiagram2.command.CommandNewActivity2;
+import net.sourceforge.plantuml.activitydiagram2.command.CommandNewMultilinesActivity2;
 import net.sourceforge.plantuml.activitydiagram2.command.CommandStart2;
 import net.sourceforge.plantuml.command.AbstractUmlSystemCommandFactory;
 
@@ -55,6 +59,7 @@ public class ActivityDiagramFactory2 extends AbstractUmlSystemCommandFactory {
 		system = new ActivityDiagram2();
 
 		addCommonCommands(system);
+		addCommand(new CommandEnd2(system));
 		addCommand(new CommandStart2(system));
 		addCommand(new CommandNewActivity2(system));
 		addCommand(new CommandIf2(system));
@@ -62,6 +67,7 @@ public class ActivityDiagramFactory2 extends AbstractUmlSystemCommandFactory {
 		addCommand(new CommandElse2(system));
 		addCommand(new CommandLabel2(system));
 		addCommand(new CommandGoto2(system));
+		addCommand(new CommandBar2(system));
 
 //		addCommand(new CommandLinkActivity(system));
 //		addCommand(new CommandPartition(system));
@@ -69,7 +75,7 @@ public class ActivityDiagramFactory2 extends AbstractUmlSystemCommandFactory {
 //		addCommand(new CommandLinkLongActivity(system));
 //
 //		addCommand(new CommandNoteActivity(system));
-//		addCommand(new CommandMultilinesNoteActivity(system));
+		addCommand(new CommandMultilinesNoteActivity2(system));
 //
 //		addCommand(new CommandNoteOnActivityLink(system));
 //		addCommand(new CommandMultilinesNoteActivityLink(system));
@@ -78,6 +84,7 @@ public class ActivityDiagramFactory2 extends AbstractUmlSystemCommandFactory {
 //		addCommand(new CommandElse(system));
 //		addCommand(new CommandEndif(system));
 		// addCommand(new CommandInnerConcurrent(system));
+		addCommand(new CommandNewMultilinesActivity2(system));
 	}
 
 }

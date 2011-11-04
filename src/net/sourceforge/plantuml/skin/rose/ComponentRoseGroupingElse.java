@@ -28,33 +28,37 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5937 $
+ * Revision $Revision: 7454 $
  *
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.geom.Dimension2D;
 
 import net.sourceforge.plantuml.graphic.HorizontalAlignement;
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.skin.AbstractTextualComponent;
+import net.sourceforge.plantuml.skin.Area;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.UStroke;
 
 public class ComponentRoseGroupingElse extends AbstractTextualComponent {
 
-	public ComponentRoseGroupingElse(Color fontColor, Font smallFont, CharSequence comment) {
+	private final HtmlColor groupBorder;
+
+	public ComponentRoseGroupingElse(HtmlColor fontColor, HtmlColor groupBorder, UFont smallFont, CharSequence comment) {
 		super(comment == null ? null : "[" + comment + "]", fontColor, smallFont, HorizontalAlignement.LEFT, 5, 5, 1);
+		this.groupBorder = groupBorder;
 	}
-	
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		stroke(ug, 2, 2);
-		ug.getParam().setColor(getFontColor());
+		ug.getParam().setColor(groupBorder);
 		ug.draw(0, 1, new ULine(dimensionToUse.getWidth(), 0));
 		ug.getParam().setStroke(new UStroke());
 		getTextBlock().drawU(ug, getMarginX1(), getMarginY());
@@ -62,7 +66,7 @@ public class ComponentRoseGroupingElse extends AbstractTextualComponent {
 
 	@Override
 	public double getPreferredHeight(StringBounder stringBounder) {
-		return 15;
+		return getTextHeight(stringBounder);
 	}
 
 	@Override

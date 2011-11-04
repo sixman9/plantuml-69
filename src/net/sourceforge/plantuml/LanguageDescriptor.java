@@ -61,6 +61,7 @@ public class LanguageDescriptor {
 		keyword.add("@startuml");
 		keyword.add("@enduml");
 		keyword.add("as");
+		keyword.add("also");
 		keyword.add("autonumber");
 		keyword.add("title");
 		keyword.add("newpage");
@@ -104,6 +105,8 @@ public class LanguageDescriptor {
 		keyword.add("header");
 		keyword.add("center");
 		keyword.add("rotate");
+		keyword.add("ref");
+		keyword.add("return");
 
 		
 		preproc.add("!include");

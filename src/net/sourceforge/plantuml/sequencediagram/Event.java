@@ -28,11 +28,17 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 3835 $
+ * Revision $Revision: 6483 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram;
 
+import net.sourceforge.plantuml.Url;
+
 public interface Event {
+
+	boolean dealWith(Participant someone);
+
+	Url getUrl();
 
 }

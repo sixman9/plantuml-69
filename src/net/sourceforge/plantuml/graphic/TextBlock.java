@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 4125 $
+ * Revision $Revision: 7163 $
  *
  */
 package net.sourceforge.plantuml.graphic;
@@ -36,14 +36,11 @@ package net.sourceforge.plantuml.graphic;
 import java.awt.Graphics2D;
 import java.awt.geom.Dimension2D;
 
-import net.sourceforge.plantuml.ugraphic.UGraphic;
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
 
-public interface TextBlock {
+public interface TextBlock extends UDrawable3 {
 
 	Dimension2D calculateDimension(StringBounder stringBounder);
 
-	void drawTOBEREMOVED(Graphics2D g2d, double x, double y);
-
-	void drawU(UGraphic ug, double x, double y);
-
+	void drawTOBEREMOVED(ColorMapper colorMapper, Graphics2D g2d, double x, double y);
 }

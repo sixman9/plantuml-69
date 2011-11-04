@@ -36,18 +36,16 @@ package net.sourceforge.plantuml.oregon;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.sourceforge.plantuml.DiagramType;
 import net.sourceforge.plantuml.PSystemBasicFactory;
+import net.sourceforge.plantuml.StringUtils;
 
 public class PSystemOregonFactory implements PSystemBasicFactory {
 
 	private PSystemOregon system;
 	private List<String> inputs;
 
-	public PSystemOregonFactory() {
-		reset();
-	}
-
-	public void reset() {
+	public void init(String startLine) {
 		inputs = null;
 	}
 
@@ -70,7 +68,14 @@ public class PSystemOregonFactory implements PSystemBasicFactory {
 		if (inputs == null) {
 			return false;
 		}
-		inputs.add(line);
+		if (StringUtils.isNotEmpty(line)) {
+			inputs.add(line);
+		}
 		return true;
 	}
+	
+	public DiagramType getDiagramType() {
+		return DiagramType.UML;
+	}
+
 }

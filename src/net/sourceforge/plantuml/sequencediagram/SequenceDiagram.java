@@ -31,23 +31,32 @@
  */
 package net.sourceforge.plantuml.sequencediagram;
 
+import java.awt.geom.Dimension2D;
+import java.awt.image.BufferedImage;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 import net.sourceforge.plantuml.FileFormat;
 import net.sourceforge.plantuml.FileFormatOption;
+import net.sourceforge.plantuml.Log;
 import net.sourceforge.plantuml.StringUtils;
 import net.sourceforge.plantuml.UmlDiagram;
+import net.sourceforge.plantuml.UmlDiagramInfo;
 import net.sourceforge.plantuml.UmlDiagramType;
+import net.sourceforge.plantuml.directdot.DotText;
 import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.sequencediagram.graphic.FileMaker;
 import net.sourceforge.plantuml.sequencediagram.graphic.SequenceDiagramFileMaker;
@@ -63,7 +72,7 @@ public class SequenceDiagram extends UmlDiagram {
 
 	private final List<Event> events = new ArrayList<Event>();
 
-	private final List<ParticipantEnglober> participantEnglobers = new ArrayList<ParticipantEnglober>();
+	private final Map<Participant, ParticipantEnglober> participantEnglobers2 = new HashMap<Participant, ParticipantEnglober>();
 
 	private Skin skin = new ProtectedSkin(new Rose());
 
@@ -77,6 +86,7 @@ public class SequenceDiagram extends UmlDiagram {
 		if (result == null) {
 			result = new Participant(ParticipantType.PARTICIPANT, code, display);
 			participants.put(code, result);
+			participantEnglobers2.put(result, participantEnglober);
 		}
 		return result;
 	}
@@ -92,10 +102,12 @@ public class SequenceDiagram extends UmlDiagram {
 			throw new IllegalArgumentException();
 		}
 		if (display == null) {
-			display = Arrays.asList(code);
+			// display = Arrays.asList(code);
+			display = StringUtils.getWithNewlines(code);
 		}
 		final Participant result = new Participant(type, code, display);
 		participants.put(code, result);
+		participantEnglobers2.put(result, participantEnglober);
 		return result;
 	}
 
@@ -103,13 +115,18 @@ public class SequenceDiagram extends UmlDiagram {
 		return Collections.unmodifiableMap(participants);
 	}
 
-	public void addMessage(AbstractMessage m) {
+	public String addMessage(AbstractMessage m) {
 		lastMessage = m;
+		lastDelay = null;
 		events.add(m);
 		if (pendingCreate != null) {
+			if (m.compatibleForCreate(pendingCreate.getParticipant()) == false) {
+				return "After create command, you have to send a message to \"" + pendingCreate.getParticipant() + "\"";
+			}
 			m.addLifeEvent(pendingCreate);
 			pendingCreate = null;
 		}
+		return null;
 	}
 
 	public void addNote(Note n) {
@@ -143,15 +160,19 @@ public class SequenceDiagram extends UmlDiagram {
 		events.add(new Divider(strings));
 	}
 
+	private Delay lastDelay;
+
 	public void delay(List<String> strings) {
-		events.add(new Delay(strings));
+		final Delay delay = new Delay(strings);
+		events.add(delay);
+		lastDelay = delay;
 	}
 
 	public List<Event> events() {
 		return Collections.unmodifiableList(events);
 	}
 
-	private FileMaker getSequenceDiagramPngMaker(FileFormatOption fileFormatOption) {
+	private FileMaker getSequenceDiagramPngMaker(FileFormatOption fileFormatOption, List<BufferedImage> flashcodes) {
 
 		final FileFormat fileFormat = fileFormatOption.getFileFormat();
 
@@ -159,33 +180,97 @@ public class SequenceDiagram extends UmlDiagram {
 			return new SequenceDiagramTxtMaker(this, fileFormat);
 		}
 
-		return new SequenceDiagramFileMaker(this, skin, fileFormatOption);
+		return new SequenceDiagramFileMaker(this, skin, fileFormatOption, flashcodes);
 	}
 
-	public List<File> createFiles(File suggestedFile, FileFormatOption fileFormat) throws IOException {
-		return getSequenceDiagramPngMaker(fileFormat).createMany(suggestedFile);
+	public List<File> exportDiagrams(File suggestedFile, FileFormatOption fileFormat) throws IOException {
+
+		if (fileFormat.getFileFormat() == FileFormat.DOT) {
+			return exportDot(suggestedFile);
+		}
+
+		final List<File> result = new ArrayList<File>();
+		final int nbImages = getNbImages();
+		for (int i = 0; i < nbImages; i++) {
+
+			final File f = SequenceDiagramFileMaker.computeFilename(suggestedFile, i, fileFormat.getFileFormat());
+			Log.info("Creating file: " + f);
+			final OutputStream fos = new BufferedOutputStream(new FileOutputStream(f));
+			final StringBuilder cmap = new StringBuilder();
+			try {
+				exportDiagram(fos, cmap, i, fileFormat);
+			} finally {
+				fos.close();
+			}
+			if (this.hasUrl() && cmap.length() > 0) {
+				exportCmap(suggestedFile, cmap);
+			}
+			Log.info("File size : " + f.length());
+			result.add(f);
+		}
+		return result;
 	}
 
-	public void createFile(OutputStream os, int index, FileFormatOption fileFormat) throws IOException {
-		getSequenceDiagramPngMaker(fileFormat).createOne(os, index);
+	private List<File> exportDot(File suggestedFile) throws IOException {
+		final PrintWriter pw = new PrintWriter(suggestedFile);
+		final List<String> printed = Arrays
+				.asList("Error: Sequence diagrams do not use Dot/Graphviz : they cannot be generated as DOT files.");
+		final DotText dotText = new DotText(printed, HtmlColor.getColorIfValid("#33FF02"), HtmlColor.BLACK);
+		final StringBuilder sb = new StringBuilder();
+		dotText.generateDot(sb);
+		pw.println(sb);
+		pw.close();
+		return Arrays.asList(suggestedFile);
+	}
+
+	@Override
+	protected UmlDiagramInfo exportDiagramInternal(OutputStream os, StringBuilder cmap, int index,
+			FileFormatOption fileFormat, List<BufferedImage> flashcodes) throws IOException {
+		final FileMaker sequenceDiagramPngMaker = getSequenceDiagramPngMaker(fileFormat, flashcodes);
+		final UmlDiagramInfo info = sequenceDiagramPngMaker.createOne2(os, index);
+		if (cmap != null && this.hasUrl() && fileFormat.getFileFormat() == FileFormat.PNG) {
+			sequenceDiagramPngMaker.appendCmap(cmap);
+		}
+		return info;
+	}
+
+	// support for CommandReturn
+	private final Stack<Message> activationState = new Stack<Message>();
+
+	public Message getActivatingMessage() {
+		if (activationState.empty()) {
+			return null;
+		}
+		return activationState.peek();
 	}
 
 	private LifeEvent pendingCreate = null;
 
-	public void activate(Participant p, LifeEventType lifeEventType, HtmlColor backcolor) {
+	public String activate(Participant p, LifeEventType lifeEventType, HtmlColor backcolor) {
+		if (lastDelay != null) {
+			return "You cannot Activate/Deactivate just after a ...";
+		}
 		if (lifeEventType == LifeEventType.CREATE) {
 			pendingCreate = new LifeEvent(p, lifeEventType, backcolor);
-			return;
+			return null;
 		}
 		if (lastMessage == null) {
 			if (lifeEventType == LifeEventType.ACTIVATE) {
 				p.incInitialLife(backcolor);
+				return null;
 			}
-			return;
-			// throw new
-			// UnsupportedOperationException("Step1Message::beforeMessage");
+			return "Only activate command can occur before message are send";
 		}
-		lastMessage.addLifeEvent(new LifeEvent(p, lifeEventType, backcolor));
+		if (lifeEventType == LifeEventType.ACTIVATE && lastMessage instanceof Message) {
+			activationState.push((Message) lastMessage);
+		} else if (lifeEventType == LifeEventType.DEACTIVATE && activationState.empty() == false) {
+			activationState.pop();
+		}
+		final boolean ok = lastMessage.addLifeEvent(new LifeEvent(p, lifeEventType, backcolor));
+		if (ok) {
+			return null;
+		}
+		return "Activate/Deactivate already done on " + p.getCode();
 	}
 
 	private final List<GroupingStart> openGroupings = new ArrayList<GroupingStart>();
@@ -251,7 +336,14 @@ public class SequenceDiagram extends UmlDiagram {
 	}
 
 	public boolean isShowFootbox() {
-		return showFootbox;
+		final String footbox = getSkinParam().getValue("footbox");
+		if (footbox == null) {
+			return showFootbox;
+		}
+		if (footbox.equalsIgnoreCase("hide")) {
+			return false;
+		}
+		return true;
 	}
 
 	private boolean showFootbox = true;
@@ -266,65 +358,127 @@ public class SequenceDiagram extends UmlDiagram {
 		return UmlDiagramType.SEQUENCE;
 	}
 
-	private Participant boxStart;
-	private List<String> boxStartComment;
-	private HtmlColor boxColor;
-	private boolean boxPending = false;
+	// private Participant boxStart;
+	// private List<String> boxStartComment;
+	// private HtmlColor boxColor;
+	// private boolean boxPending = false;
+
+	private ParticipantEnglober participantEnglober;
 
 	public void boxStart(List<String> comment, HtmlColor color) {
-		if (boxPending) {
+		if (participantEnglober != null) {
 			throw new IllegalStateException();
 		}
-		this.boxStart = getLastParticipant();
-		this.boxStartComment = comment;
-		this.boxColor = color;
-		this.boxPending = true;
+		this.participantEnglober = new ParticipantEnglober(comment, color);
 	}
 
 	public void endBox() {
-		if (boxPending == false) {
+		if (participantEnglober == null) {
 			throw new IllegalStateException();
 		}
-		final Participant last = getLastParticipant();
-		this.participantEnglobers.add(new ParticipantEnglober(next(boxStart), last, boxStartComment, boxColor));
-		this.boxStart = null;
-		this.boxStartComment = null;
-		this.boxColor = null;
-		this.boxPending = false;
+		this.participantEnglober = null;
 	}
 
 	public boolean isBoxPending() {
-		return boxPending;
+		return participantEnglober != null;
 	}
 
-	private Participant next(Participant p) {
-		if (p == null) {
-			return participants.values().iterator().next();
-		}
-		for (final Iterator<Participant> it = participants.values().iterator(); it.hasNext();) {
-			final Participant current = it.next();
-			if (current == p && it.hasNext()) {
-				return it.next();
-			}
-		}
-		throw new IllegalArgumentException("p=" + p.getCode());
-	}
-
-	private Participant getLastParticipant() {
-		Participant result = null;
-		for (Participant p : participants.values()) {
-			result = p;
-		}
-		return result;
-	}
-
-	public final List<ParticipantEnglober> getParticipantEnglobers() {
-		return Collections.unmodifiableList(participantEnglobers);
-	}
+	// private Participant next(Participant p) {
+	// if (p == null) {
+	// return participants.values().iterator().next();
+	// }
+	// for (final Iterator<Participant> it = participants.values().iterator();
+	// it.hasNext();) {
+	// final Participant current = it.next();
+	// if (current == p && it.hasNext()) {
+	// return it.next();
+	// }
+	// }
+	// throw new IllegalArgumentException("p=" + p.getCode());
+	// }
+	//
+	// private Participant getLastParticipant() {
+	// Participant result = null;
+	// for (Participant p : participants.values()) {
+	// result = p;
+	// }
+	// return result;
+	// }
+	//
+	// public final List<ParticipantEnglober> getParticipantEnglobers() {
+	// return Collections.unmodifiableList(participantEnglobers);
+	// }
 
 	@Override
 	public int getNbImages() {
-		return getSequenceDiagramPngMaker(new FileFormatOption(FileFormat.PNG)).getNbPages();
+		return getSequenceDiagramPngMaker(new FileFormatOption(FileFormat.PNG), null).getNbPages();
+	}
+
+	public void removeHiddenParticipants() {
+		for (Participant p : new ArrayList<Participant>(participants.values())) {
+			if (isAlone(p)) {
+				remove(p);
+			}
+		}
+	}
+
+	private void remove(Participant p) {
+		final boolean ok = participants.values().remove(p);
+		if (ok == false) {
+			throw new IllegalArgumentException();
+		}
+		participantEnglobers2.remove(p);
+	}
+
+	private boolean isAlone(Participant p) {
+		for (Event ev : events) {
+			if (ev.dealWith(p)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public void putParticipantInLast(String code) {
+		final Participant p = participants.get(code);
+		if (p == null) {
+			throw new IllegalArgumentException(code);
+		}
+		participants.remove(code);
+		participants.put(code, p);
+		participantEnglobers2.put(p, participantEnglober);
+	}
+
+	public ParticipantEnglober getEnglober(Participant p) {
+		return participantEnglobers2.get(p);
+	}
+
+	private boolean autoactivate;
+
+	public final void setAutoactivate(boolean autoactivate) {
+		this.autoactivate = autoactivate;
+	}
+
+	public final boolean isAutoactivate() {
+		return autoactivate;
+	}
+
+	public boolean hasUrl() {
+		for (Participant p : participants.values()) {
+			if (p.getUrl() != null) {
+				return true;
+			}
+		}
+		for (Event ev : events) {
+			if (ev.getUrl() != null) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public void addReference(Reference ref) {
+		events.add(ref);
 	}
 
 }

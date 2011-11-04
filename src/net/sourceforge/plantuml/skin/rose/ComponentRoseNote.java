@@ -28,19 +28,19 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 4167 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.geom.Dimension2D;
 import java.util.List;
 
 import net.sourceforge.plantuml.graphic.HorizontalAlignement;
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.skin.AbstractTextualComponent;
+import net.sourceforge.plantuml.skin.Area;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.UPolygon;
@@ -48,14 +48,18 @@ import net.sourceforge.plantuml.ugraphic.UPolygon;
 final public class ComponentRoseNote extends AbstractTextualComponent {
 
 	private final int cornersize = 10;
-	private final Color back;
-	private final Color foregroundColor;
+	private final HtmlColor back;
+	private final HtmlColor foregroundColor;
+	private final double paddingX;
+	private final double paddingY;
 
-	public ComponentRoseNote(Color back, Color foregroundColor, Color fontColor, Font font,
-			List<? extends CharSequence> strings) {
+	public ComponentRoseNote(HtmlColor back, HtmlColor foregroundColor, HtmlColor fontColor, UFont font,
+			List<? extends CharSequence> strings, double paddingX, double paddingY) {
 		super(strings, fontColor, font, HorizontalAlignement.LEFT, 6, 15, 5);
 		this.back = back;
 		this.foregroundColor = foregroundColor;
+		this.paddingX = paddingX;
+		this.paddingY = paddingY;
 	}
 
 	@Override
@@ -71,16 +75,17 @@ final public class ComponentRoseNote extends AbstractTextualComponent {
 
 	@Override
 	public double getPaddingX() {
-		return 5;
+		return paddingX;
 	}
 
 	@Override
 	public double getPaddingY() {
-		return 5;
+		return paddingY;
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
+
 		final StringBounder stringBounder = ug.getStringBounder();
 		final int textHeight = (int) getTextHeight(stringBounder);
 
@@ -93,6 +98,9 @@ final public class ComponentRoseNote extends AbstractTextualComponent {
 		polygon.addPoint(x2, cornersize);
 		polygon.addPoint(x2 - cornersize, 0);
 		polygon.addPoint(0, 0);
+		if (withShadow) {
+			polygon.setDeltaShadow(4);
+		}
 
 		ug.getParam().setColor(foregroundColor);
 		ug.getParam().setBackcolor(back);

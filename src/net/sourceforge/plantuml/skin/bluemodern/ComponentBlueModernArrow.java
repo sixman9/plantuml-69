@@ -28,20 +28,22 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5945 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.skin.bluemodern;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.geom.Dimension2D;
 import java.util.List;
 
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.skin.ArrowConfiguration;
+import net.sourceforge.plantuml.skin.ArrowHead;
 import net.sourceforge.plantuml.skin.ArrowPart;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.UPolygon;
@@ -49,13 +51,14 @@ import net.sourceforge.plantuml.ugraphic.UStroke;
 
 public class ComponentBlueModernArrow extends AbstractComponentBlueModernArrow {
 
-	public ComponentBlueModernArrow(Color foregroundColor, Color fontColor, Font font,
+	public ComponentBlueModernArrow(HtmlColor foregroundColor, HtmlColor fontColor, UFont font,
 			List<? extends CharSequence> stringsToDisplay, ArrowConfiguration arrowConfiguration) {
 		super(foregroundColor, fontColor, font, stringsToDisplay, arrowConfiguration);
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		final StringBounder stringBounder = ug.getStringBounder();
 		final int textHeight = (int) getTextHeight(stringBounder);
 
@@ -76,7 +79,7 @@ public class ComponentBlueModernArrow extends AbstractComponentBlueModernArrow {
 		final int direction = getDirection();
 		final UPolygon polygon = new UPolygon();
 
-		if (getArrowConfiguration().isASync()) {
+		if (getArrowConfiguration().getHead() == ArrowHead.ASYNC) {
 			ug.getParam().setStroke(new UStroke(1.5));
 			if (direction == 1) {
 				if (getArrowConfiguration().getPart() != ArrowPart.BOTTOM_PART) {

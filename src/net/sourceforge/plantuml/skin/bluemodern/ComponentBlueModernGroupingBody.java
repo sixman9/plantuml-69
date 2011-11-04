@@ -28,16 +28,17 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 4167 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.skin.bluemodern;
 
-import java.awt.Color;
 import java.awt.geom.Dimension2D;
 
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.skin.AbstractComponent;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.URectangle;
@@ -45,23 +46,25 @@ import net.sourceforge.plantuml.ugraphic.UStroke;
 
 public class ComponentBlueModernGroupingBody extends AbstractComponent {
 
-	private final Color foregroundColor;
-	private final Color generalBackgroundColor;
+	private final HtmlColor foregroundColor;
+	private final HtmlColor generalBackgroundColor;
 
-	public ComponentBlueModernGroupingBody(Color generalBackgroundColor, Color foregroundColor) {
+	public ComponentBlueModernGroupingBody(HtmlColor generalBackgroundColor, HtmlColor foregroundColor) {
 		this.foregroundColor = foregroundColor;
 		this.generalBackgroundColor = generalBackgroundColor;
 	}
 
 	@Override
-	protected void drawBackgroundInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawBackgroundInternalU(UGraphic ug, Area area) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		ug.getParam().setColor(generalBackgroundColor);
 		ug.getParam().setBackcolor(generalBackgroundColor);
 		ug.draw(0, 0, new URectangle(dimensionToUse.getWidth(), dimensionToUse.getHeight()));
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		ug.getParam().setStroke(new UStroke(2));
 		ug.getParam().setColor(foregroundColor);
 

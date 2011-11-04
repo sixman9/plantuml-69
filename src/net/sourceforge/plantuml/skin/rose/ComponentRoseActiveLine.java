@@ -28,37 +28,63 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 4169 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
 import java.awt.geom.Dimension2D;
 
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.skin.AbstractComponent;
+import net.sourceforge.plantuml.skin.Area;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
+import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.URectangle;
 
 public class ComponentRoseActiveLine extends AbstractComponent {
 
-	private final Color foregroundColor;
-	private final Color lifeLineBackground;
+	private final HtmlColor foregroundColor;
+	private final HtmlColor lifeLineBackground;
+	private final boolean closeUp;
+	private final boolean closeDown;
 
-	public ComponentRoseActiveLine(Color foregroundColor, Color lifeLineBackground) {
+	public ComponentRoseActiveLine(HtmlColor foregroundColor, HtmlColor lifeLineBackground, boolean closeUp, boolean closeDown) {
 		this.foregroundColor = foregroundColor;
 		this.lifeLineBackground = lifeLineBackground;
+		this.closeUp = closeUp;
+		this.closeDown = closeDown;
 	}
 
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
-		ug.getParam().setBackcolor(lifeLineBackground);
-		ug.getParam().setColor(foregroundColor);
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		final StringBounder stringBounder = ug.getStringBounder();
 		final int x = (int) (dimensionToUse.getWidth() - getPreferredWidth(stringBounder)) / 2;
 
 		final URectangle rect = new URectangle(getPreferredWidth(stringBounder), dimensionToUse.getHeight());
+		if (closeUp && closeDown) {
+			ug.getParam().setBackcolor(lifeLineBackground);
+			ug.getParam().setColor(foregroundColor);
+			ug.draw(x, 0, rect);
+			return;
+		}
+		ug.getParam().setBackcolor(lifeLineBackground);
+		ug.getParam().setColor(lifeLineBackground);
 		ug.draw(x, 0, rect);
+		ug.getParam().setColor(foregroundColor);
+
+		final ULine vline = new ULine(0, dimensionToUse.getHeight());
+		ug.draw(x, 0, vline);
+		ug.draw(x + getPreferredWidth(stringBounder), 0, vline);
+		
+		final ULine hline = new ULine(getPreferredWidth(stringBounder), 0);
+		if (closeUp) {
+			ug.draw(x, 0, hline);
+		}
+		if (closeDown) {
+			ug.draw(x, dimensionToUse.getHeight(), hline);
+		}
 	}
 
 	@Override

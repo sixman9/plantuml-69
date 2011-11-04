@@ -28,7 +28,7 @@
  *
  * Original Author:  Arnaud Roques
  *
- * Revision $Revision: 5794 $
+ * Revision $Revision: 7357 $
  *
  */
 package net.sourceforge.plantuml;
@@ -40,15 +40,17 @@ import java.util.List;
 
 public interface PSystem {
 
-	List<File> createFiles(File suggestedFile, FileFormatOption fileFormatOption) throws IOException, InterruptedException;
+	List<File> exportDiagrams(File suggestedFile, FileFormatOption fileFormatOption) throws IOException, InterruptedException;
 
-	void createFile(OutputStream os, int index, FileFormatOption fileFormatOption) throws IOException;
+	void exportDiagram(OutputStream os, StringBuilder cmap, int index, FileFormatOption fileFormatOption) throws IOException;
 	
 	int getNbImages();
 
 	String getDescription();
 
 	String getMetadata();
+	
+	String getWarningOrError();
 
 	UmlSource getSource();
 

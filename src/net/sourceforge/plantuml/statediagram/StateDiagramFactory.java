@@ -28,12 +28,13 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5493 $
+ * Revision $Revision: 6931 $
  *
  */
 package net.sourceforge.plantuml.statediagram;
 
 import net.sourceforge.plantuml.classdiagram.command.CommandMultilinesClassNote;
+import net.sourceforge.plantuml.classdiagram.command.CommandUrl;
 import net.sourceforge.plantuml.command.AbstractUmlSystemCommandFactory;
 import net.sourceforge.plantuml.command.CommandNoteEntity;
 import net.sourceforge.plantuml.statediagram.command.CommandAddField;
@@ -43,7 +44,10 @@ import net.sourceforge.plantuml.statediagram.command.CommandCreatePackageState2;
 import net.sourceforge.plantuml.statediagram.command.CommandCreateState;
 import net.sourceforge.plantuml.statediagram.command.CommandCreateState2;
 import net.sourceforge.plantuml.statediagram.command.CommandEndState;
+import net.sourceforge.plantuml.statediagram.command.CommandHideEmptyDescription;
 import net.sourceforge.plantuml.statediagram.command.CommandLinkState2;
+import net.sourceforge.plantuml.statediagram.command.CommandMultilinesNoteOnStateLink;
+import net.sourceforge.plantuml.statediagram.command.CommandNoteOnStateLink;
 import net.sourceforge.plantuml.usecasediagram.command.CommandRankDirUsecase;
 
 public class StateDiagramFactory extends AbstractUmlSystemCommandFactory {
@@ -61,7 +65,7 @@ public class StateDiagramFactory extends AbstractUmlSystemCommandFactory {
 		addCommand(new CommandRankDirUsecase(system));
 		addCommand(new CommandCreateState(system));
 		addCommand(new CommandCreateState2(system));
-		//addCommand(new CommandLinkState(system));
+		// addCommand(new CommandLinkState(system));
 		addCommand(new CommandLinkState2(system));
 		addCommand(new CommandCreatePackageState(system));
 		addCommand(new CommandCreatePackageState2(system));
@@ -69,8 +73,12 @@ public class StateDiagramFactory extends AbstractUmlSystemCommandFactory {
 		addCommand(new CommandAddField(system));
 		addCommand(new CommandConcurrentState(system));
 		addCommand(new CommandMultilinesClassNote(system));
+		addCommand(new CommandHideEmptyDescription(system));
 
 		addCommand(new CommandNoteEntity(system));
+		addCommand(new CommandNoteOnStateLink(system));
+		addCommand(new CommandMultilinesNoteOnStateLink(system));
+		addCommand(new CommandUrl(system));
 		addCommonCommands(system);
 	}
 }

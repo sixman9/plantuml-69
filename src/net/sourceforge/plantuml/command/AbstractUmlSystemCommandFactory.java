@@ -28,27 +28,36 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 6002 $
+ * Revision $Revision: 6750 $
  *
  */
 package net.sourceforge.plantuml.command;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import net.sourceforge.plantuml.DiagramType;
 import net.sourceforge.plantuml.UmlDiagram;
 
 public abstract class AbstractUmlSystemCommandFactory implements PSystemCommandFactory {
 
+	private final DiagramType type;
+	private List<Command> cmds;
+
 	protected AbstractUmlSystemCommandFactory() {
-		reset();
+		this(DiagramType.UML);
+	}
+
+	protected AbstractUmlSystemCommandFactory(DiagramType type) {
+		this.type = type;
 	}
 
 	public String checkFinalError() {
 		return null;
 	}
 
-	private List<Command> cmds = new ArrayList<Command>();
 
 	final public CommandControl isValid(List<String> lines) {
 		for (Command cmd : cmds) {
@@ -73,7 +82,7 @@ public abstract class AbstractUmlSystemCommandFactory implements PSystemCommandF
 		throw new IllegalArgumentException();
 	}
 
-	final public void reset() {
+	final public void init(String startLine) {
 		cmds = new ArrayList<Command>();
 		initCommands();
 	}
@@ -82,6 +91,8 @@ public abstract class AbstractUmlSystemCommandFactory implements PSystemCommandF
 
 	final protected void addCommonCommands(UmlDiagram system) {
 		addCommand(new CommandNope(system));
+		addCommand(new CommandComment(system));
+		addCommand(new CommandMultilinesComment(system));
 		addCommand(new CommandPragma(system));
 		addCommand(new CommandTitle(system));
 		addCommand(new CommandMultilinesTitle(system));
@@ -99,10 +110,25 @@ public abstract class AbstractUmlSystemCommandFactory implements PSystemCommandF
 		addCommand(new CommandScale(system));
 		addCommand(new CommandScaleWidthAndHeight(system));
 		addCommand(new CommandScaleWidthOrHeight(system));
+		addCommand(new CommandHideUnlinked(system));
+
 	}
 
 	protected final void addCommand(Command cmd) {
 		cmds.add(cmd);
+	}
+
+	final public List<String> getDescription() {
+		final List<String> result = new ArrayList<String>();
+		for (Command cmd : cmds) {
+			result.addAll(Arrays.asList(cmd.getDescription()));
+		}
+		return Collections.unmodifiableList(result);
+
+	}
+
+	final public DiagramType getDiagramType() {
+		return type;
 	}
 
 }

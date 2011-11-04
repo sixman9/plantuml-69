@@ -31,8 +31,10 @@
  */
 package net.sourceforge.plantuml.ugraphic.svg;
 
+import net.sourceforge.plantuml.StringUtils;
 import net.sourceforge.plantuml.svg.SvgGraphics;
 import net.sourceforge.plantuml.ugraphic.ClipContainer;
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
 import net.sourceforge.plantuml.ugraphic.UDriver;
 import net.sourceforge.plantuml.ugraphic.UParam;
 import net.sourceforge.plantuml.ugraphic.UPath;
@@ -46,8 +48,17 @@ public class DriverPathSvg implements UDriver<SvgGraphics> {
 		this.clipContainer = clipContainer;
 	}
 
-	public void draw(UShape ushape, double x, double y, UParam param, SvgGraphics svg) {
+	public void draw(UShape ushape, double x, double y, ColorMapper mapper, UParam param, SvgGraphics svg) {
 		final UPath shape = (UPath) ushape;
+
+		final String color = param.getColor() == null ? "none" : StringUtils.getAsHtml(mapper.getMappedColor(param
+				.getColor()));
+		final String backcolor = param.getBackcolor() == null ? "none" : StringUtils.getAsHtml(mapper
+				.getMappedColor(param.getBackcolor()));
+
+		svg.setFillColor(backcolor);
+		svg.setStrokeColor(color);
+		svg.setStrokeWidth("" + param.getStroke().getThickness(), param.getStroke().getDasharraySvg());
 
 		svg.svgPath(x, y, shape);
 

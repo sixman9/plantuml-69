@@ -31,9 +31,12 @@
  */
 package net.sourceforge.plantuml.ugraphic.svg;
 
-import net.sourceforge.plantuml.graphic.HtmlColor;
+import java.awt.geom.Line2D;
+
+import net.sourceforge.plantuml.StringUtils;
 import net.sourceforge.plantuml.svg.SvgGraphics;
 import net.sourceforge.plantuml.ugraphic.ClipContainer;
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
 import net.sourceforge.plantuml.ugraphic.UClip;
 import net.sourceforge.plantuml.ugraphic.UDriver;
 import net.sourceforge.plantuml.ugraphic.ULine;
@@ -48,25 +51,29 @@ public class DriverLineSvg implements UDriver<SvgGraphics> {
 		this.clipContainer = clipContainer;
 	}
 
-	public void draw(UShape ushape, double x, double y, UParam param, SvgGraphics svg) {
+	public void draw(UShape ushape, double x, double y, ColorMapper mapper, UParam param, SvgGraphics svg) {
 		final ULine shape = (ULine) ushape;
 
-		final UClip clip = clipContainer.getClip();
+		double x2 = x + shape.getDX();
+		double y2 = y + shape.getDY();
 
+		final UClip clip = clipContainer.getClip();
 		if (clip != null) {
-			if (clip.isInside(x, y) == false) {
+			final Line2D.Double line = clip.getClippedLine(new Line2D.Double(x, y, x2, y2));
+			if (line == null) {
 				return;
 			}
-			if (clip.isInside(x + shape.getDX(), y + shape.getDY()) == false) {
-				return;
-			}
+			x = line.x1;
+			y = line.y1;
+			x2 = line.x2;
+			y2 = line.y2;
 		}
 
 		// svg.setStroke(new BasicStroke((float)
 		// param.getStroke().getThickness()));
-		final String color = param.getColor() == null ? "none" : HtmlColor.getAsHtml(param.getColor());
+		final String color = param.getColor() == null ? "none" : StringUtils.getAsHtml(mapper.getMappedColor(param.getColor()));
 		svg.setStrokeColor(color);
 		svg.setStrokeWidth("" + param.getStroke().getThickness(), param.getStroke().getDasharraySvg());
-		svg.svgLine(x, y, x + shape.getDX(), y + shape.getDY());
+		svg.svgLine(x, y, x2, y2);
 	}
 }

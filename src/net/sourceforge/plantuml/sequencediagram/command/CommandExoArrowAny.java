@@ -45,6 +45,7 @@ import net.sourceforge.plantuml.sequencediagram.Participant;
 import net.sourceforge.plantuml.sequencediagram.SequenceDiagram;
 import net.sourceforge.plantuml.skin.ArrowConfiguration;
 import net.sourceforge.plantuml.skin.ArrowDirection;
+import net.sourceforge.plantuml.skin.ArrowHead;
 import net.sourceforge.plantuml.skin.ArrowPart;
 
 abstract class CommandExoArrowAny extends SingleLineCommand<SequenceDiagram> {
@@ -64,7 +65,7 @@ abstract class CommandExoArrowAny extends SingleLineCommand<SequenceDiagram> {
 		final Participant p = getSystem().getOrCreateParticipant(
 				StringUtils.eventuallyRemoveStartingAndEndingDoubleQuote(arg.get(posParticipant)));
 
-		final boolean sync = arrow.endsWith(">>") || arrow.startsWith("<<") || arrow.contains("//")
+		final boolean sync = arrow.contains(">>") || arrow.contains("<<") || arrow.contains("//")
 				|| arrow.contains("\\\\");
 		final boolean dotted = arrow.contains("--");
 
@@ -80,12 +81,15 @@ abstract class CommandExoArrowAny extends SingleLineCommand<SequenceDiagram> {
 			config = config.withDotted();
 		}
 		if (sync) {
-			config = config.withAsync();
+			config = config.withHead(ArrowHead.ASYNC);
 		}
 		config = config.withPart(getArrowPart(arrow));
 
-		getSystem().addMessage(
+		final String error = getSystem().addMessage(
 				new MessageExo(p, getMessageExoType(arrow), labels, config, getSystem().getNextMessageNumber()));
+		if (error != null) {
+			return CommandExecutionResult.error(error);
+		}
 		return CommandExecutionResult.ok();
 	}
 

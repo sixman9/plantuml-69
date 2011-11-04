@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import net.sourceforge.plantuml.Url;
 import net.sourceforge.plantuml.graphic.HtmlColor;
 
 public class GroupingStart extends Grouping {
@@ -71,6 +72,19 @@ public class GroupingStart extends Grouping {
 	@Override
 	public HtmlColor getBackColorGeneral() {
 		return backColorGeneral;
+	}
+
+	public boolean dealWith(Participant someone) {
+		return false;
+	}
+
+	public Url getUrl() {
+		return null;
+	}
+
+	@Override
+	public boolean isParallel() {
+		return getTitle().equals("par2");
 	}
 
 }

@@ -34,14 +34,12 @@
 package net.sourceforge.plantuml.sequencediagram.graphic;
 
 import java.awt.geom.Dimension2D;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.Collections;
-import java.util.List;
 
 import net.sourceforge.plantuml.FileFormat;
+import net.sourceforge.plantuml.UmlDiagramInfo;
 import net.sourceforge.plantuml.asciiart.TextSkin;
 import net.sourceforge.plantuml.asciiart.TextStringBounder;
 import net.sourceforge.plantuml.graphic.StringBounder;
@@ -73,7 +71,7 @@ public class SequenceDiagramTxtMaker implements FileMaker {
 				sequenceDiagram.isShowFootbox(), sequenceDiagram.getAutonewpage());
 
 		for (Participant p : sequenceDiagram.participants().values()) {
-			initializer.addParticipant(p);
+			initializer.addParticipant(p, null);
 		}
 		for (Event ev : sequenceDiagram.events()) {
 			initializer.addEvent(ev);
@@ -105,21 +103,30 @@ public class SequenceDiagramTxtMaker implements FileMaker {
 		drawableSet.drawU(ug, 0, fullDimension.getWidth(), page, diagram.isShowFootbox());
 	}
 
-	public List<File> createMany(File suggestedFile) throws IOException {
-		if (fileFormat == FileFormat.UTXT) {
-			ug.getCharArea().print(new PrintStream(suggestedFile, "UTF-8"));
-		} else {
-			ug.getCharArea().print(new PrintStream(suggestedFile));
-		}
-		return Collections.singletonList(suggestedFile);
-	}
+	// public List<File> createManyRRMV(File suggestedFile) throws IOException {
+	// if (fileFormat == FileFormat.UTXT) {
+	// ug.getCharArea().print(new PrintStream(suggestedFile, "UTF-8"));
+	// } else {
+	// ug.getCharArea().print(new PrintStream(suggestedFile));
+	// }
+	// return Collections.singletonList(suggestedFile);
+	// }
 
-	public void createOne(OutputStream os, int index) throws IOException {
-		throw new UnsupportedOperationException();
+	public UmlDiagramInfo createOne2(OutputStream os, int index) throws IOException {
+		final PrintStream ps = new PrintStream(os);
+		if (fileFormat == FileFormat.UTXT) {
+			ug.getCharArea().print(ps);
+		} else {
+			ug.getCharArea().print(ps);
+		}
+		return null;
 	}
 
 	public int getNbPages() {
 		return 1;
+	}
+
+	public void appendCmap(StringBuilder cmap) {
 	}
 
 }

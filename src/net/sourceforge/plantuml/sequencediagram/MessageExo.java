@@ -35,6 +35,7 @@ package net.sourceforge.plantuml.sequencediagram;
 
 import java.util.List;
 
+import net.sourceforge.plantuml.Url;
 import net.sourceforge.plantuml.skin.ArrowConfiguration;
 
 public class MessageExo extends AbstractMessage {
@@ -49,12 +50,36 @@ public class MessageExo extends AbstractMessage {
 		this.type = type;
 	}
 
+	@Override
+	protected NotePosition overideNotePosition(NotePosition notePosition) {
+		if (type == MessageExoType.FROM_LEFT || type == MessageExoType.TO_LEFT) {
+			return NotePosition.RIGHT;
+		}
+		if (type == MessageExoType.FROM_RIGHT || type == MessageExoType.TO_RIGHT) {
+			return NotePosition.LEFT;
+		}
+		throw new IllegalStateException();
+	}
+
 	public Participant getParticipant() {
 		return participant;
 	}
 
 	public final MessageExoType getType() {
 		return type;
+	}
+
+	public boolean dealWith(Participant someone) {
+		return participant == someone;
+	}
+
+	public Url getUrl() {
+		return null;
+	}
+
+	@Override
+	public boolean compatibleForCreate(Participant p) {
+		return p == participant;
 	}
 
 }

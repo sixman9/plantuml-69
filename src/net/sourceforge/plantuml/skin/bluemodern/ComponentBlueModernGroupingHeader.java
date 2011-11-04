@@ -28,23 +28,24 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 6009 $
+ * Revision $Revision: 7328 $
  *
  */
 package net.sourceforge.plantuml.skin.bluemodern;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.geom.Dimension2D;
 import java.util.Arrays;
 import java.util.List;
 
 import net.sourceforge.plantuml.graphic.FontConfiguration;
 import net.sourceforge.plantuml.graphic.HorizontalAlignement;
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.graphic.StringBounder;
 import net.sourceforge.plantuml.graphic.TextBlock;
 import net.sourceforge.plantuml.graphic.TextBlockUtils;
 import net.sourceforge.plantuml.skin.AbstractTextualComponent;
+import net.sourceforge.plantuml.skin.Area;
+import net.sourceforge.plantuml.ugraphic.UFont;
 import net.sourceforge.plantuml.ugraphic.UGraphic;
 import net.sourceforge.plantuml.ugraphic.ULine;
 import net.sourceforge.plantuml.ugraphic.UPolygon;
@@ -58,12 +59,12 @@ public class ComponentBlueModernGroupingHeader extends AbstractTextualComponent 
 
 	private final TextBlock commentTextBlock;
 
-	private final Color headerBackgroundColor;
-	private final Color generalBackgroundColor;
-	private final Color borderColor;
+	private final HtmlColor headerBackgroundColor;
+	private final HtmlColor generalBackgroundColor;
+	private final HtmlColor borderColor;
 
-	public ComponentBlueModernGroupingHeader(Color headerBackgroundColor, Color generalBackgroundColor,
-			Color borderColor, Color fontColor1, Color fontColor2, Font bigFont, Font smallFont,
+	public ComponentBlueModernGroupingHeader(HtmlColor headerBackgroundColor, HtmlColor generalBackgroundColor,
+			HtmlColor borderColor, HtmlColor fontColor1, HtmlColor fontColor2, UFont bigFont, UFont smallFont,
 			List<? extends CharSequence> strings) {
 		super(strings.get(0), fontColor1, bigFont, HorizontalAlignement.LEFT, 15, 30, 1);
 		this.headerBackgroundColor = headerBackgroundColor;
@@ -101,14 +102,16 @@ public class ComponentBlueModernGroupingHeader extends AbstractTextualComponent 
 	}
 
 	@Override
-	protected void drawBackgroundInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawBackgroundInternalU(UGraphic ug, Area area) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		ug.getParam().setColor(generalBackgroundColor);
 		ug.getParam().setBackcolor(generalBackgroundColor);
 		ug.draw(0, 0, new URectangle(dimensionToUse.getWidth(), dimensionToUse.getHeight()));
 	}
 
 	@Override
-	protected void drawInternalU(UGraphic ug, Dimension2D dimensionToUse) {
+	protected void drawInternalU(UGraphic ug, Area area, boolean withShadow) {
+		final Dimension2D dimensionToUse = area.getDimensionToUse();
 		final StringBounder stringBounder = ug.getStringBounder();
 		final int textWidth = (int) getTextWidth(stringBounder);
 		final int textHeight = (int) getTextHeight(stringBounder);

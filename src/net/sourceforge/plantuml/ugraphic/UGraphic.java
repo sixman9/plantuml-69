@@ -28,12 +28,10 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5988 $
+ * Revision $Revision: 6590 $
  *
  */
 package net.sourceforge.plantuml.ugraphic;
-
-import java.awt.Font;
 
 import net.sourceforge.plantuml.graphic.StringBounder;
 
@@ -45,7 +43,7 @@ public interface UGraphic {
 
 	public void draw(double x, double y, UShape shape);
 
-	public void centerChar(double x, double y, char c, Font font);
+	public void centerChar(double x, double y, char c, UFont font);
 
 	public void translate(double dx, double dy);
 
@@ -58,5 +56,9 @@ public interface UGraphic {
 	public void setClip(UClip clip);
 
 	public void setAntiAliasing(boolean trueForOn);
+
+	public void setUrl(String url, String tooltip);
+	
+	public ColorMapper getColorMapper();
 
 }

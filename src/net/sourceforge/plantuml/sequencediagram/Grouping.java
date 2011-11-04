@@ -74,5 +74,7 @@ public abstract class Grouping implements Event {
 	public final HtmlColor getBackColorElement() {
 		return backColorElement;
 	}
+	
+	public abstract boolean isParallel(); 
 
 }

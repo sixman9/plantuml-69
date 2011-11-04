@@ -28,13 +28,14 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5923 $
+ * Revision $Revision: 7339 $
  *
  */
 package net.sourceforge.plantuml.sequencediagram;
 
 import java.util.List;
 
+import net.sourceforge.plantuml.Url;
 import net.sourceforge.plantuml.skin.ArrowConfiguration;
 
 public class Message extends AbstractMessage {
@@ -55,6 +56,19 @@ public class Message extends AbstractMessage {
 
 	public Participant getParticipant2() {
 		return p2;
+	}
+
+	public boolean dealWith(Participant someone) {
+		return someone == p1 || someone == p2;
+	}
+
+	public Url getUrl() {
+		return null;
+	}
+
+	@Override
+	public boolean compatibleForCreate(Participant p) {
+		return p1 != p && p2 == p;
 	}
 
 }

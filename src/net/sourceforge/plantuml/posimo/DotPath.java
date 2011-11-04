@@ -48,9 +48,12 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 import net.sourceforge.plantuml.asciiart.BasicCharArea;
+import net.sourceforge.plantuml.eps.EpsGraphics;
+import net.sourceforge.plantuml.ugraphic.UPath;
+import net.sourceforge.plantuml.ugraphic.USegmentType;
 import net.sourceforge.plantuml.ugraphic.UShape;
 
-public class DotPath implements UShape {
+public class DotPath implements UShape, Moveable {
 
 	static class TriPoints {
 		public TriPoints(String p1, String p2, String p, double deltaY) {
@@ -81,11 +84,76 @@ public class DotPath implements UShape {
 
 	private final List<CubicCurve2D.Double> beziers = new ArrayList<CubicCurve2D.Double>();
 
+	public DotPath() {
+		this(new ArrayList<CubicCurve2D.Double>());
+	}
+
+	public DotPath(DotPath other) {
+		this(new ArrayList<CubicCurve2D.Double>());
+		for (CubicCurve2D.Double c : other.beziers) {
+			this.beziers.add(new CubicCurve2D.Double(c.x1, c.y1, c.ctrlx1, c.ctrly1, c.ctrlx2, c.ctrly2, c.x2, c.y2));
+		}
+	}
+
+	private DotPath(List<CubicCurve2D.Double> beziers) {
+		this.beziers.addAll(beziers);
+	}
+
+	public DotPath(String init, double deltaY) {
+		if (init.startsWith("M") == false) {
+			throw new IllegalArgumentException();
+		}
+		final int posC = init.indexOf("C");
+		if (posC == -1) {
+			throw new IllegalArgumentException();
+		}
+		final StringTokenizer st = new StringTokenizer(init.substring(1, posC), ",");
+		final double startX = Double.parseDouble(st.nextToken());
+		final double startY = Double.parseDouble(st.nextToken()) + deltaY;
+
+		final StringTokenizer st2 = new StringTokenizer(init.substring(posC + 1), " ");
+		final List<TriPoints> triPoints = new ArrayList<TriPoints>();
+		while (st2.hasMoreTokens()) {
+			final String p1 = st2.nextToken();
+			final String p2 = st2.nextToken();
+			final String p = st2.nextToken();
+			triPoints.add(new TriPoints(p1, p2, p, deltaY));
+		}
+		double x = startX;
+		double y = startY;
+		for (TriPoints p : triPoints) {
+			final CubicCurve2D.Double bezier = new CubicCurve2D.Double(x, y, p.x1, p.y1, p.x2, p.y2, p.x, p.y);
+			beziers.add(bezier);
+			x = p.x;
+			y = p.y;
+		}
+		// this.print = triPoints.toString();
+	}
+
 	// private final String print;
 
 	public Point2D getStartPoint() {
 		return beziers.get(0).getP1();
 	}
+	
+	public void forceStartPoint(double x, double y) {
+		beziers.get(0).x1 = x;
+		beziers.get(0).y1 = y;
+		beziers.get(0).ctrlx1 = x;
+		beziers.get(0).ctrly1 = y;
+	}
+	
+	public Point2D getEndPoint() {
+		return beziers.get(beziers.size() - 1).getP2();
+	}
+
+	public void forceEndPoint(double x, double y) {
+		beziers.get(beziers.size() - 1).x2 = x;
+		beziers.get(beziers.size() - 1).y2 = y;
+		beziers.get(beziers.size() - 1).ctrlx2 = x;
+		beziers.get(beziers.size() - 1).ctrly2 = y;
+	}
+
 
 	public MinMax getMinMax() {
 		final MinMax result = new MinMax();
@@ -98,12 +166,28 @@ public class DotPath implements UShape {
 		return result;
 	}
 
-	public DotPath() {
-		this(new ArrayList<CubicCurve2D.Double>());
-	}
+	public double getMinDist(Point2D ref) {
+		double result = Double.MAX_VALUE;
+		for (CubicCurve2D.Double c : beziers) {
+			final double d1 = ref.distance(c.x1, c.y1);
+			if (d1 < result) {
+				result = d1;
+			}
+			final double d2 = ref.distance(c.x2, c.y2);
+			if (d2 < result) {
+				result = d2;
+			}
+			final double d3 = ref.distance(c.ctrlx1, c.ctrly1);
+			if (d3 < result) {
+				result = d3;
+			}
+			final double d4 = ref.distance(c.ctrlx2, c.ctrly2);
+			if (d4 < result) {
+				result = d4;
+			}
+		}
+		return result;
 
-	public Point2D getEndPoint() {
-		return beziers.get(beziers.size() - 1).getP2();
 	}
 
 	public Line2D getEndTangeante() {
@@ -164,48 +248,6 @@ public class DotPath implements UShape {
 		return new DotPath(copy);
 	}
 
-
-	private DotPath(List<CubicCurve2D.Double> beziers) {
-		this.beziers.addAll(beziers);
-		// this.print = super.toString();
-	}
-
-	// @Override
-	// public String toString() {
-	// return print;
-	// }
-
-	public DotPath(String init, double deltaY) {
-		if (init.startsWith("M") == false) {
-			throw new IllegalArgumentException();
-		}
-		final int posC = init.indexOf("C");
-		if (posC == -1) {
-			throw new IllegalArgumentException();
-		}
-		final StringTokenizer st = new StringTokenizer(init.substring(1, posC), ",");
-		final double startX = Double.parseDouble(st.nextToken());
-		final double startY = Double.parseDouble(st.nextToken()) + deltaY;
-
-		final StringTokenizer st2 = new StringTokenizer(init.substring(posC + 1), " ");
-		final List<TriPoints> triPoints = new ArrayList<TriPoints>();
-		while (st2.hasMoreTokens()) {
-			final String p1 = st2.nextToken();
-			final String p2 = st2.nextToken();
-			final String p = st2.nextToken();
-			triPoints.add(new TriPoints(p1, p2, p, deltaY));
-		}
-		double x = startX;
-		double y = startY;
-		for (TriPoints p : triPoints) {
-			final CubicCurve2D.Double bezier = new CubicCurve2D.Double(x, y, p.x1, p.y1, p.x2, p.y2, p.x, p.y);
-			beziers.add(bezier);
-			x = p.x;
-			y = p.y;
-		}
-		// this.print = triPoints.toString();
-	}
-
 	public Map<Point2D, Double> somePoints() {
 		final Map<Point2D, Double> result = new HashMap<Point2D, Double>();
 		for (CubicCurve2D.Double bez : beziers) {
@@ -237,6 +279,45 @@ public class DotPath implements UShape {
 			p.append(bez, true);
 		}
 		g2d.draw(p);
+	}
+
+	public void drawOk(EpsGraphics eps, double x, double y) {
+		boolean first = true;
+		for (CubicCurve2D.Double bez : beziers) {
+			bez = new CubicCurve2D.Double(x + bez.x1, y + bez.y1, x + bez.ctrlx1, y + bez.ctrly1, x + bez.ctrlx2, y
+					+ bez.ctrly2, x + bez.x2, y + bez.y2);
+			eps.epsLine(bez.x1, bez.y1, bez.x2, bez.y2);
+		}
+	}
+
+	public void draw(EpsGraphics eps, double x, double y) {
+		eps.newpathDot(true);
+		boolean first = true;
+		for (CubicCurve2D.Double bez : beziers) {
+			bez = new CubicCurve2D.Double(x + bez.x1, y + bez.y1, x + bez.ctrlx1, y + bez.ctrly1, x + bez.ctrlx2, y
+					+ bez.ctrly2, x + bez.x2, y + bez.y2);
+			if (first) {
+				eps.movetoNoMacro(bez.x1, bez.y1);
+				first = false;
+			}
+			eps.curvetoNoMacro(bez.ctrlx1, bez.ctrly1, bez.ctrlx2, bez.ctrly2, bez.x2, bez.y2);
+		}
+		eps.closepathDot(true);
+	}
+
+	public UPath toUPath() {
+		final UPath result = new UPath();
+		boolean start = true;
+		for (CubicCurve2D.Double bez : beziers) {
+			if (start) {
+				result.add(new double[] { bez.x1, bez.y1 }, USegmentType.SEG_MOVETO);
+				start = false;
+			}
+			result.add(new double[] { bez.ctrlx1, bez.ctrly1, bez.ctrlx2, bez.ctrly2, bez.x2, bez.y2 },
+					USegmentType.SEG_CUBICTO);
+
+		}
+		return result;
 	}
 
 	public Point2D getFrontierIntersection(Shape shape, Rectangle2D... notIn) {
@@ -326,9 +407,10 @@ public class DotPath implements UShape {
 			} else if (bez.y1 == bez.y2) {
 				area.drawHLine('-', (int) (bez.y1 / pixelYPerChar), (int) (bez.x1 / pixelXPerChar),
 						(int) (bez.x2 / pixelXPerChar));
-			} else {
-				throw new UnsupportedOperationException("bez=" + toString(bez));
-			}
+			} /*
+				 * else { throw new UnsupportedOperationException("bez=" +
+				 * toString(bez)); }
+				 */
 		}
 	}
 
@@ -361,6 +443,19 @@ public class DotPath implements UShape {
 		}
 		return new DotPath(copy);
 
+	}
+
+	public void moveSvek(double deltaX, double deltaY) {
+		for (int i = 0; i < beziers.size(); i++) {
+			final CubicCurve2D.Double c = beziers.get(i);
+			beziers.set(i, new CubicCurve2D.Double(c.x1 + deltaX, c.y1 + deltaY, c.ctrlx1 + deltaX, c.ctrly1 + deltaY,
+					c.ctrlx2 + deltaX, c.ctrly2 + deltaY, c.x2 + deltaX, c.y2 + deltaY));
+		}
+
+	}
+
+	public final List<CubicCurve2D.Double> getBeziers() {
+		return Collections.unmodifiableList(beziers);
 	}
 
 }

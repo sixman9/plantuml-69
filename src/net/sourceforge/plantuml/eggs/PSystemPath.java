@@ -33,39 +33,23 @@
  */
 package net.sourceforge.plantuml.eggs;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.List;
 
 import net.sourceforge.plantuml.AbstractPSystem;
 import net.sourceforge.plantuml.FileFormatOption;
+import net.sourceforge.plantuml.ugraphic.ColorMapperIdentity;
 
 public class PSystemPath extends AbstractPSystem {
 	
 	private final GraphicsPath path;
 
 	public PSystemPath(String s) {
-		this.path = new GraphicsPath(s);
+		this.path = new GraphicsPath(new ColorMapperIdentity(), s);
 	}
 
 
-	public List<File> createFiles(File suggestedFile, FileFormatOption fileFormat) throws IOException, InterruptedException {
-		OutputStream os = null;
-		try {
-			os = new FileOutputStream(suggestedFile);
-			path.writeImage(os);
-		} finally {
-			if (os != null) {
-				os.close();
-			}
-		}
-		return Arrays.asList(suggestedFile);
-	}
-
-	public void createFile(OutputStream os, int index, FileFormatOption fileFormat) throws IOException {
+	public void exportDiagram(OutputStream os, StringBuilder cmap, int index, FileFormatOption fileFormat) throws IOException {
 		path.writeImage(os);
 	}
 

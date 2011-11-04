@@ -31,6 +31,7 @@
  */
 package net.sourceforge.plantuml.usecasediagram;
 
+import net.sourceforge.plantuml.classdiagram.command.CommandUrl;
 import net.sourceforge.plantuml.command.AbstractUmlSystemCommandFactory;
 import net.sourceforge.plantuml.command.CommandCreateNote;
 import net.sourceforge.plantuml.command.CommandEndPackage;
@@ -62,12 +63,13 @@ public class UsecaseDiagramFactory extends AbstractUmlSystemCommandFactory {
 		addCommonCommands(system);
 
 		addCommand(new CommandPage(system));
-		//addCommand(new CommandLinkUsecase(system));
+		// addCommand(new CommandLinkUsecase(system));
 		addCommand(new CommandLinkUsecase2(system));
 
 		addCommand(new CommandPackage(system));
 		addCommand(new CommandEndPackage(system));
 		addCommand(new CommandNoteEntity(system));
+		addCommand(new CommandUrl(system));
 
 		addCommand(new CommandCreateNote(system));
 		addCommand(new CommandCreateActor(system));

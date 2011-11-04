@@ -28,37 +28,35 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5922 $
+ * Revision $Revision: 7260 $
  *
  */
 package net.sourceforge.plantuml.skin.rose;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.util.List;
 
 import net.sourceforge.plantuml.graphic.HorizontalAlignement;
+import net.sourceforge.plantuml.graphic.HtmlColor;
 import net.sourceforge.plantuml.skin.AbstractTextualComponent;
 import net.sourceforge.plantuml.skin.ArrowComponent;
 import net.sourceforge.plantuml.skin.ArrowConfiguration;
+import net.sourceforge.plantuml.ugraphic.UFont;
 
 public abstract class AbstractComponentRoseArrow extends AbstractTextualComponent implements ArrowComponent {
 
 	private final int arrowDeltaX = 10;
 	private final int arrowDeltaY = 4;
-//	private final boolean dotted;
-//	private final boolean full;
-	private final Color foregroundColor;
+	private final HtmlColor foregroundColor;
 	private final ArrowConfiguration arrowConfiguration;
 
-	public AbstractComponentRoseArrow(Color foregroundColor, Color fontColor, Font font,
+	public AbstractComponentRoseArrow(HtmlColor foregroundColor, HtmlColor fontColor, UFont font,
 			List<? extends CharSequence> stringsToDisplay, ArrowConfiguration arrowConfiguration) {
 		super(stringsToDisplay, fontColor, font, HorizontalAlignement.LEFT, 7, 7, 2);
 		this.arrowConfiguration = arrowConfiguration;
 		this.foregroundColor = foregroundColor;
 	}
 
-	protected final Color getForegroundColor() {
+	protected final HtmlColor getForegroundColor() {
 		return foregroundColor;
 	}
 
@@ -79,12 +77,5 @@ public abstract class AbstractComponentRoseArrow extends AbstractTextualComponen
 		return arrowConfiguration;
 	}
 
-//	final protected boolean isDotted() {
-//		return dotted;
-//	}
-//
-//	final protected boolean isFull() {
-//		return full;
-//	}
 
 }

@@ -41,44 +41,27 @@ public class Member {
 	private final boolean staticModifier;
 	private final boolean abstractModifier;
 
-	private boolean privateModifier;
-	private boolean protectedModifier;
-	private boolean publicModifier;
-	private boolean packagePrivateModifier;
-
 	private final VisibilityModifier visibilityModifier;
 
 	public Member(String display, boolean isMethod) {
 		final String lower = display.toLowerCase();
 		this.staticModifier = lower.contains("{static}") || lower.contains("{classifier}");
 		this.abstractModifier = lower.contains("{abstract}");
-		final String displayClean = display.replaceAll("(?i)\\{(static|classifier|abstract)\\}", "").trim();
+		String displayClean = display.replaceAll("(?i)\\{(static|classifier|abstract)\\}", "").trim();
+		if (displayClean.length() == 0) {
+			displayClean = " ";
+		}
 
 		if (VisibilityModifier.isVisibilityCharacter(displayClean.charAt(0))) {
-			updateVisibility(display.charAt(0));
 			visibilityModifier = VisibilityModifier.getVisibilityModifier(display.charAt(0), isMethod == false);
 			this.display = displayClean.substring(1).trim();
 		} else {
 			this.display = displayClean;
 			visibilityModifier = null;
 		}
-		// assert VisibilityModifier.isVisibilityCharacter(this.display.charAt(0)) == false;
-
-	}
-
-	private void updateVisibility(char c) {
-		if (c == '-') {
-			this.privateModifier = true;
-		}
-		if (c == '#') {
-			this.protectedModifier = true;
-		}
-		if (c == '+') {
-			this.publicModifier = true;
-		}
-		if (c == '~') {
-			this.packagePrivateModifier = true;
-		}
+		// assert
+		// VisibilityModifier.isVisibilityCharacter(this.display.charAt(0)) ==
+		// false;
 
 	}
 
@@ -130,23 +113,27 @@ public class Member {
 	}
 
 	public final boolean isVisibilityModified() {
-		return privateModifier || publicModifier || protectedModifier || packagePrivateModifier;
+		return visibilityModifier != null;
 	}
 
 	public final boolean isPrivate() {
-		return privateModifier;
+		return visibilityModifier == VisibilityModifier.PRIVATE_FIELD
+				|| visibilityModifier == VisibilityModifier.PRIVATE_METHOD;
 	}
 
 	public final boolean isProtected() {
-		return protectedModifier;
+		return visibilityModifier == VisibilityModifier.PROTECTED_FIELD
+				|| visibilityModifier == VisibilityModifier.PROTECTED_METHOD;
 	}
 
 	public final boolean isPublic() {
-		return publicModifier;
+		return visibilityModifier == VisibilityModifier.PUBLIC_FIELD
+				|| visibilityModifier == VisibilityModifier.PUBLIC_METHOD;
 	}
 
 	public final boolean isPackagePrivate() {
-		return packagePrivateModifier;
+		return visibilityModifier == VisibilityModifier.PACKAGE_PRIVATE_FIELD
+				|| visibilityModifier == VisibilityModifier.PACKAGE_PRIVATE_METHOD;
 	}
 
 	public final VisibilityModifier getVisibilityModifier() {

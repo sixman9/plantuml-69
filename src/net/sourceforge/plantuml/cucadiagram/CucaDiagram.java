@@ -28,18 +28,24 @@
  *
  * Original Author:  Arnaud Roques
  * 
- * Revision $Revision: 5877 $
+ * Revision $Revision: 7394 $
  *
  */
 package net.sourceforge.plantuml.cucadiagram;
 
+import java.awt.image.BufferedImage;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -51,13 +57,21 @@ import java.util.TreeMap;
 import net.sourceforge.plantuml.FileFormat;
 import net.sourceforge.plantuml.FileFormatOption;
 import net.sourceforge.plantuml.Log;
-import net.sourceforge.plantuml.OptionFlags;
 import net.sourceforge.plantuml.UmlDiagram;
+import net.sourceforge.plantuml.UmlDiagramInfo;
 import net.sourceforge.plantuml.UmlDiagramType;
 import net.sourceforge.plantuml.cucadiagram.dot.CucaDiagramFileMaker;
 import net.sourceforge.plantuml.cucadiagram.dot.CucaDiagramFileMakerBeta;
+import net.sourceforge.plantuml.cucadiagram.dot.CucaDiagramFileMakerResult;
 import net.sourceforge.plantuml.cucadiagram.dot.CucaDiagramPngMaker3;
 import net.sourceforge.plantuml.cucadiagram.dot.CucaDiagramTxtMaker;
+import net.sourceforge.plantuml.cucadiagram.dot.DrawFile;
+import net.sourceforge.plantuml.cucadiagram.dot.ICucaDiagramFileMaker;
+import net.sourceforge.plantuml.html.CucaDiagramHtmlMaker;
+import net.sourceforge.plantuml.png.PngSplitter;
+import net.sourceforge.plantuml.skin.VisibilityModifier;
+import net.sourceforge.plantuml.svek.CucaDiagramFileMakerSvek;
+import net.sourceforge.plantuml.ugraphic.ColorMapper;
 import net.sourceforge.plantuml.xmi.CucaDiagramXmiMaker;
 
 public abstract class CucaDiagram extends UmlDiagram implements GroupHierarchy, PortionShower {
@@ -65,7 +79,9 @@ public abstract class CucaDiagram extends UmlDiagram implements GroupHierarchy, 
 	private int horizontalPages = 1;
 	private int verticalPages = 1;
 
-	private final Map<String, Entity> entities = new TreeMap<String, Entity>();
+	private final Map<String, Entity> entities = new LinkedHashMap<String, Entity>();
+	// private final Map<String, Entity> entities = new TreeMap<String,
+	// Entity>();
 	private final Map<IEntity, Integer> nbLinks = new HashMap<IEntity, Integer>();
 
 	private final List<Link> links = new ArrayList<Link>();
@@ -105,7 +121,7 @@ public abstract class CucaDiagram extends UmlDiagram implements GroupHierarchy, 
 		if (display == null) {
 			display = code;
 		}
-		final Entity entity = new Entity(code, display, type, group);
+		final Entity entity = new Entity(code, display, type, group, getHides());
 		entities.put(code, entity);
 		nbLinks.put(entity, 0);
 		return entity;
@@ -144,6 +160,9 @@ public abstract class CucaDiagram extends UmlDiagram implements GroupHierarchy, 
 			}
 		}
 		entities.put(proxy.getCode(), proxy);
+		// if (proxy.getImageFile() != null) {
+		// proxy.addSubImage(proxy.getImageFile());
+		// }
 	}
 
 	final public Collection<Group> getChildrenGroups(Group parent) {
@@ -166,9 +185,9 @@ public abstract class CucaDiagram extends UmlDiagram implements GroupHierarchy, 
 
 	protected final Group getOrCreateGroupInternal(String code, String display, String namespace, GroupType type,
 			Group parent) {
-//		if (entityExist(code)) {
-//			throw new IllegalArgumentException("code=" + code);
-//		}
+		// if (entityExist(code)) {
+		// throw new IllegalArgumentException("code=" + code);
+		// }
 		Group g = groups.get(code);
 		if (g == null) {
 			g = new Group(code, display, namespace, type, parent);
@@ -176,7 +195,7 @@ public abstract class CucaDiagram extends UmlDiagram implements GroupHierarchy, 
 
 			Entity entityGroup = entities.get(code);
 			if (entityGroup == null) {
-				entityGroup = new Entity("$$" + code, code, EntityType.GROUP, g);
+				entityGroup = new Entity("$$" + code, code, EntityType.GROUP, g, getHides());
 			} else {
 				entityGroup.muteToCluster(g);
 			}
@@ -215,7 +234,10 @@ public abstract class CucaDiagram extends UmlDiagram implements GroupHierarchy, 
 	}
 
 	final public Map<String, Entity> entities() {
-		return Collections.unmodifiableMap(entities);
+		if (getSkinParam().isSvek()) {
+			return Collections.unmodifiableMap(entities);
+		}
+		return Collections.unmodifiableMap(new TreeMap<String, Entity>(entities));
 	}
 
 	final public void addLink(Link link) {
@@ -270,47 +292,96 @@ public abstract class CucaDiagram extends UmlDiagram implements GroupHierarchy, 
 
 	abstract protected List<String> getDotStrings();
 
-	final public List<File> createFiles(File suggestedFile, FileFormatOption fileFormatOption) throws IOException,
-			InterruptedException {
-		
-		final FileFormat fileFormat = fileFormatOption.getFileFormat();
-
-		if (fileFormat == FileFormat.ATXT || fileFormat == FileFormat.UTXT) {
-			return createFilesTxt(suggestedFile, fileFormat);
+	final public String[] getDotStringSkek() {
+		final List<String> result = new ArrayList<String>();
+		for (String s : getDotStrings()) {
+			if (s.startsWith("nodesep") || s.startsWith("ranksep")) {
+				result.add(s);
+			}
 		}
-
-		if (fileFormat.name().startsWith("XMI")) {
-			return createFilesXmi(suggestedFile, fileFormat);
-		}
-
-		if (OptionFlags.getInstance().useJavaInsteadOfDot()) {
-			return createPng2(suggestedFile);
-		}
-		if (getUmlDiagramType() == UmlDiagramType.COMPOSITE || (BETA && getUmlDiagramType() == UmlDiagramType.CLASS)) {
-			final CucaDiagramFileMakerBeta maker = new CucaDiagramFileMakerBeta(this);
-			return maker.createFile(suggestedFile, getDotStrings(), fileFormat);
-		}
-		final CucaDiagramFileMaker maker = new CucaDiagramFileMaker(this);
-		return maker.createFile(suggestedFile, getDotStrings(), fileFormatOption);
+		return result.toArray(new String[result.size()]);
 	}
 
-	private List<File> createFilesXmi(File suggestedFile, FileFormat fileFormat) throws IOException {
+	private void createFilesXmi(OutputStream suggestedFile, FileFormat fileFormat) throws IOException {
 		final CucaDiagramXmiMaker maker = new CucaDiagramXmiMaker(this, fileFormat);
-		return maker.createFiles(suggestedFile);
-	}
-
-	private List<File> createFilesTxt(File suggestedFile, FileFormat fileFormat) throws IOException {
-		final CucaDiagramTxtMaker maker = new CucaDiagramTxtMaker(this, fileFormat);
-		return maker.createFiles(suggestedFile);
+		maker.createFiles(suggestedFile);
 	}
 
 	public static boolean BETA;
 
-	final public void createFile(OutputStream os, int index, FileFormatOption fileFormatOption) throws IOException {
+	private List<File> createFilesHtml(File suggestedFile) throws IOException {
+		final String name = suggestedFile.getName();
+		final int idx = name.lastIndexOf('.');
+		final File dir = new File(suggestedFile.getParentFile(), name.substring(0, idx));
+		final CucaDiagramHtmlMaker maker = new CucaDiagramHtmlMaker(this, dir);
+		return maker.create();
+	}
+
+	@Override
+	public List<File> exportDiagrams(File suggestedFile, FileFormatOption fileFormat) throws IOException,
+			InterruptedException {
+		if (suggestedFile.exists() && suggestedFile.isDirectory()) {
+			throw new IllegalArgumentException("File is a directory " + suggestedFile);
+		}
+
+		if (fileFormat.getFileFormat() == FileFormat.HTML) {
+			return createFilesHtml(suggestedFile);
+		}
+
+		final StringBuilder cmap = new StringBuilder();
+		OutputStream os = null;
+		try {
+			os = new BufferedOutputStream(new FileOutputStream(suggestedFile));
+			this.exportDiagram(os, cmap, 0, fileFormat);
+		} finally {
+			if (os != null) {
+				os.close();
+			}
+		}
+		List<File> result = Arrays.asList(suggestedFile);
+
+		if (this.hasUrl() && cmap.length() > 0) {
+			exportCmap(suggestedFile, cmap);
+		}
+
+		if (fileFormat.getFileFormat() == FileFormat.PNG) {
+			result = new PngSplitter(suggestedFile, this.getHorizontalPages(), this.getVerticalPages(),
+					this.getMetadata(), this.getDpi(fileFormat)).getFiles();
+		}
+		return result;
+
+	}
+
+	@Override
+	final protected UmlDiagramInfo exportDiagramInternal(OutputStream os, StringBuilder cmap, int index,
+			FileFormatOption fileFormatOption, List<BufferedImage> flashcodes) throws IOException {
 		final FileFormat fileFormat = fileFormatOption.getFileFormat();
+
 		if (fileFormat == FileFormat.ATXT || fileFormat == FileFormat.UTXT) {
-			createFilesTxt(os, index, fileFormat);
-			return;
+			try {
+				createFilesTxt(os, index, fileFormat);
+			} catch (Throwable t) {
+				t.printStackTrace(new PrintStream(os));
+			}
+			return new UmlDiagramInfo();
+		}
+
+		if (fileFormat.name().startsWith("XMI")) {
+			createFilesXmi(os, fileFormat);
+			return new UmlDiagramInfo();
+		}
+		//
+		// if (OptionFlags.getInstance().useJavaInsteadOfDot()) {
+		// return createPng2(suggestedFile);
+		// }
+		if (getUmlDiagramType() == UmlDiagramType.COMPOSITE || (BETA && getUmlDiagramType() == UmlDiagramType.CLASS)) {
+			final CucaDiagramFileMakerBeta maker = new CucaDiagramFileMakerBeta(this);
+			try {
+				maker.createFile(os, getDotStrings(), fileFormat);
+			} catch (InterruptedException e) {
+				throw new IOException(e.toString());
+			}
+			return new UmlDiagramInfo();
 		}
 
 		if (getUmlDiagramType() == UmlDiagramType.COMPOSITE) {
@@ -321,20 +392,46 @@ public abstract class CucaDiagram extends UmlDiagram implements GroupHierarchy, 
 				e.printStackTrace();
 				throw new IOException(e.toString());
 			}
-			return;
+			return new UmlDiagramInfo();
 		}
-		final CucaDiagramFileMaker maker = new CucaDiagramFileMaker(this);
+		final ICucaDiagramFileMaker maker;
+		if (getSkinParam().isSvek()) {
+			maker = new CucaDiagramFileMakerSvek(this, flashcodes);
+		} else {
+			maker = new CucaDiagramFileMaker(this, flashcodes);
+		}
 		try {
-			maker.createFile(os, getDotStrings(), fileFormatOption);
+			final CucaDiagramFileMakerResult result = maker.createFile(os, getDotStrings(), fileFormatOption);
+			if (result != null && cmap != null && result.getCmapResult() != null) {
+				cmap.append(result.getCmapResult());
+			}
+			if (result != null) {
+				this.warningOrError = result.getWarningOrError();
+			}
+			return result == null ? new UmlDiagramInfo() : new UmlDiagramInfo(result.getWidth());
 		} catch (InterruptedException e) {
 			Log.error(e.toString());
 			throw new IOException(e.toString());
 		}
 	}
 
-	private void createFilesTxt(OutputStream os, int index, FileFormat fileFormat) {
-		throw new UnsupportedOperationException();
-		// TODO Auto-generated method stub
+	private String warningOrError;
+
+	@Override
+	public String getWarningOrError() {
+		final String generalWarningOrError = super.getWarningOrError();
+		if (warningOrError == null) {
+			return generalWarningOrError;
+		}
+		if (generalWarningOrError == null) {
+			return warningOrError;
+		}
+		return generalWarningOrError + "\n" + warningOrError;
+	}
+
+	private void createFilesTxt(OutputStream os, int index, FileFormat fileFormat) throws IOException {
+		final CucaDiagramTxtMaker maker = new CucaDiagramTxtMaker(this, fileFormat);
+		maker.createFiles(os, index);
 	}
 
 	public final Rankdir getRankdir() {
@@ -480,7 +577,16 @@ public abstract class CucaDiagram extends UmlDiagram implements GroupHierarchy, 
 		}
 	}
 
+	public void hideOrShow(Set<VisibilityModifier> visibilities, boolean show) {
+		if (show) {
+			hides.removeAll(visibilities);
+		} else {
+			hides.addAll(visibilities);
+		}
+	}
+
 	private final List<HideOrShow> hideOrShows = new ArrayList<HideOrShow>();
+	private final Set<VisibilityModifier> hides = new HashSet<VisibilityModifier>();
 
 	static class HideOrShow {
 		private final EntityGender gender;
@@ -498,5 +604,49 @@ public abstract class CucaDiagram extends UmlDiagram implements GroupHierarchy, 
 	public int getNbImages() {
 		return this.horizontalPages * this.verticalPages;
 	}
-	
+
+	public final Set<VisibilityModifier> getHides() {
+		return Collections.unmodifiableSet(hides);
+	}
+
+	public void clean() throws IOException {
+		for (Imaged entity : entities().values()) {
+			cleanTemporaryFiles(entity);
+		}
+		for (Imaged entity : getLinks()) {
+			cleanTemporaryFiles(entity);
+		}
+		for (Group g : groups.values()) {
+			final IEntity entity = g.getEntityCluster();
+			if (entity != null) {
+				cleanTemporaryFiles(entity);
+			}
+		}
+		for (DrawFile f : ensureDeletes) {
+			f.deleteDrawFile();
+		}
+	}
+
+	private void cleanTemporaryFiles(Imaged entity) {
+		if (entity.getImageFile() != null) {
+			entity.getImageFile().deleteDrawFile();
+		}
+		if (entity instanceof Entity) {
+			((Entity) entity).cleanSubImage();
+		}
+	}
+
+	private final Set<DrawFile> ensureDeletes = new HashSet<DrawFile>();
+
+	public void ensureDelete(DrawFile imageFile) {
+		if (imageFile == null) {
+			throw new IllegalArgumentException();
+		}
+		ensureDeletes.add(imageFile);
+	}
+
+	public ColorMapper getColorMapper() {
+		return getSkinParam().getColorMapper();
+	}
+
 }
