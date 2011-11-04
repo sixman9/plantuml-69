@@ -1,0 +1,25 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+
+  group = 'net.sourceforge.plantuml'
+  version = '7482-SNAPSHOT'
+  
+
+description = """PlantUML"""
+
+sourceCompatibility = 1.5
+targetCompatibility = 1.5
+
+configurations.allObjects {
+}
+
+repositories {
+        
+    mavenRepo urls: ["http://central"]
+    mavenRepo urls: ["https://oss.sonatype.org/content/repositories/snapshots"]
+}
+dependencies {
+compile("org.apache.ant:ant:1.8.1") {
+provided : true
+}
+}
